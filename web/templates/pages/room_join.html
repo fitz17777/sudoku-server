@@ -1,0 +1,20 @@
+{{define "title"}}Join Room — Sudoku{{end}}
+{{define "content"}}
+<h1>Join a Room</h1>
+<div class="card" style="max-width:380px;">
+  {{if .Error}}<p class="error" style="margin-bottom:1rem;">{{.Error}}</p>{{end}}
+  <form method="POST" action="/play/multi/join">
+    <div class="form-group">
+      <label>Room Code</label>
+      <input type="text" name="code" placeholder="ABC123"
+             maxlength="6" style="text-transform:uppercase; letter-spacing:0.15em; font-size:1.25rem;"
+             autofocus required>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;">Join Room</button>
+  </form>
+</div>
+<p style="margin-top:1rem; color:#94a3b8; font-size:0.875rem;">
+  Don't have a code? <a href="/play/multi/create" style="color:#60a5fa;">Create a room</a>
+</p>
+{{end}}
+{{template "layout/base.html" .}}

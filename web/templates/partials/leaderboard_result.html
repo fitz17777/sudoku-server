@@ -1,0 +1,73 @@
+{{/* Game complete / leaderboard result OOB partial.
+     Data: Game, Leaderboard, PlayerRank, SuccessRate, TotalAttempts, SpeedPercentile, OOB */}}
+<div id="leaderboard-result"
+     {{if .OOB}}hx-swap-oob="true"{{end}}>
+  <h2 style="color:#22c55e;margin-bottom:1rem;">&#10003; Puzzle Complete!</h2>
+
+  {{range .Game.Players}}
+  <div style="margin-bottom:1rem;padding:1rem;background:#0f172a;border-radius:0.375rem;">
+    <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:0.25rem;">{{.DisplayName}}</p>
+    <p style="font-size:1.5rem;font-weight:800;color:#60a5fa;">{{.Score}} pts</p>
+    {{if .FinishedAt}}
+    <p style="color:#94a3b8;font-size:0.85rem;">Mistakes: {{.Mistakes}}</p>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{if .PlayerRank}}<p style="color:#94a3b8;margin-bottom:1rem;">Your rank: <strong style="color:#fbbf24;">#{{.PlayerRank}}</strong></p>{{end}}
+
+  <!-- Puzzle stats & speed percentile -->
+  {{if gt .TotalAttempts 0}}
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.25rem;">
+    <div style="flex:1;min-width:130px;padding:0.75rem;background:#0f172a;border-radius:0.375rem;text-align:center;">
+      <p style="color:#94a3b8;font-size:0.7rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:0.25rem;">Puzzle solved by</p>
+      <p style="font-size:1.4rem;font-weight:800;color:#22c55e;">{{.SuccessRate}}%</p>
+      <p style="color:#64748b;font-size:0.75rem;">of {{.TotalAttempts}} attempts</p>
+    </div>
+    {{if gt .SpeedPercentile 0}}
+    <div style="flex:1;min-width:130px;padding:0.75rem;background:#0f172a;border-radius:0.375rem;text-align:center;">
+      <p style="color:#94a3b8;font-size:0.7rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:0.25rem;">You were faster than</p>
+      <p style="font-size:1.4rem;font-weight:800;color:#60a5fa;">{{.SpeedPercentile}}%</p>
+      <p style="color:#64748b;font-size:0.75rem;">of all completions</p>
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{if .Leaderboard}}
+  <h3 style="margin-bottom:0.75rem;">Top Scores</h3>
+  <table style="width:100%;border-collapse:collapse;">
+    <thead>
+      <tr style="color:#64748b;font-size:0.8rem;text-align:left;border-bottom:1px solid #334155;">
+        <th style="padding:0.4rem 0.5rem;">#</th>
+        <th style="padding:0.4rem 0.5rem;">Player</th>
+        <th style="padding:0.4rem 0.5rem;text-align:right;">Score</th>
+        <th style="padding:0.4rem 0.5rem;text-align:right;">Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Leaderboard}}
+      <tr style="border-bottom:1px solid #1e293b;">
+        <td style="padding:0.4rem 0.5rem;color:#64748b;">{{.Rank}}</td>
+        <td style="padding:0.4rem 0.5rem;">{{.DisplayName}}</td>
+        <td style="padding:0.4rem 0.5rem;text-align:right;color:#60a5fa;font-weight:700;">{{.Score}}</td>
+        <td style="padding:0.4rem 0.5rem;text-align:right;color:#94a3b8;">{{formatTime .BestTimeS}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{end}}
+
+  <div style="display:flex;gap:0.75rem;margin-top:1.25rem;flex-wrap:wrap;">
+    {{if .RoomCode}}
+    <a href="/play/multi/room/{{.RoomCode}}" class="btn btn-primary">Back to Lobby</a>
+    <a href="/leaderboard/{{.Game.PuzzleRef.Difficulty}}/{{.Game.PuzzleRef.Number}}"
+       class="btn btn-secondary">Full Leaderboard</a>
+    {{else}}
+    <a href="/play/solo/{{.Game.PuzzleRef.Difficulty}}" class="btn btn-secondary">Play Again</a>
+    <a href="/leaderboard/{{.Game.PuzzleRef.Difficulty}}/{{.Game.PuzzleRef.Number}}"
+       class="btn btn-primary">Full Leaderboard</a>
+    <a href="/play/solo" class="btn btn-secondary">New Puzzle</a>
+    {{end}}
+  </div>
+</div>

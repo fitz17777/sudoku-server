@@ -1,0 +1,182 @@
+{{define "sidebyside-content"}}
+<div id="sbs-game" style="display:flex; gap:1.5rem; flex-wrap:wrap; align-items:flex-start; justify-content:center;">
+
+  <!-- My board -->
+  <div>
+    <!-- Header row: title / timer / hearts + score -->
+    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+      <h2 style="margin:0;">Your Board</h2>
+      <span id="sbs-timer" style="font-family:monospace; color:#94a3b8;">0:00</span>
+      <div id="score-panel" style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+          {{range .Game.Players}}
+          <span style="display:flex; align-items:center; gap:0.3rem; background:#1e293b; padding:0.2rem 0.6rem; border-radius:0.375rem;">
+            <span class="badge badge-{{.Color}}" style="margin-right:0.2rem;">{{.DisplayName}}</span>
+            {{$m := .Mistakes}}
+            {{range $i := seq 3}}<span style="color:{{if lt $i (sub 3 $m)}}#ef4444{{else}}#334155{{end}}; font-size:1.1rem;">&#9829;</span>{{end}}
+            <strong style="color:#60a5fa; font-family:monospace; font-size:0.95rem; margin-left:0.3rem;">{{.Score}} pts</strong>
+          </span>
+          {{end}}
+        </div>
+      </div>
+    </div>
+
+    <div class="sudoku-board" id="my-board"
+         hx-ext="ws"
+         ws-connect="/ws?room={{.Room.Code}}">
+      {{$grid := .Game.BoardState}}
+      {{range $r := seq 9}}{{range $c := seq 9}}
+        {{$val := index (index $grid $r) $c}}
+        <div id="cell-{{$r}}-{{$c}}"
+             class="cell{{if isThickBorderRight $c}} thick-right{{end}}{{if isThickBorderBottom $r}} thick-bottom{{end}}"
+             data-row="{{$r}}" data-col="{{$c}}"
+             onclick="sbsSelectCell(this)">
+          {{if $val}}{{$val}}{{end}}
+        </div>
+        <form ws-send id="sbs-fill-{{$r}}-{{$c}}" style="display:none;">
+          <input type="hidden" name="type" value="cell_fill">
+          <input type="hidden" name="room_id" value="{{$.Room.Code}}">
+          <input type="hidden" name="row" value="{{$r}}">
+          <input type="hidden" name="col" value="{{$c}}">
+          <input type="hidden" name="value" id="sbs-val-{{$r}}-{{$c}}" value="0">
+        </form>
+      {{end}}{{end}}
+    </div>
+
+    <div class="numpad">
+      {{range seq 9}}<button class="numpad-btn" data-n="{{add . 1}}" onclick="sbsDigit({{add . 1}})">{{add . 1}}</button>{{end}}
+      <button class="numpad-btn erase" onclick="sbsDigit(0)">&#x232B; Erase</button>
+    </div>
+    <div style="font-size:0.7rem; color:#64748b; margin-top:0.5rem; margin-bottom:0.2rem;">Notes</div>
+    <div class="numpad-notes">
+      {{range seq 9}}<button class="numpad-note-btn" onclick="enterNoteBtn({{add . 1}})">{{add . 1}}</button>{{end}}
+    </div>
+  </div>
+
+  <!-- Opponent board (read-only) -->
+  <div>
+    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+      <h2 style="margin:0;">Opponent's Board</h2>
+      <div id="opp-score-panel" style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+        {{if .Opponent}}
+        {{range .Opponent.Players}}
+        <span style="display:flex; align-items:center; gap:0.3rem; background:#1e293b; padding:0.2rem 0.6rem; border-radius:0.375rem;">
+          <span class="badge badge-{{.Color}}" style="margin-right:0.2rem;">{{.DisplayName}}</span>
+          {{$m := .Mistakes}}
+          {{range $i := seq 3}}<span style="color:{{if lt $i (sub 3 $m)}}#ef4444{{else}}#334155{{end}}; font-size:1.1rem;">&#9829;</span>{{end}}
+          <strong style="color:#60a5fa; font-family:monospace; font-size:0.95rem; margin-left:0.3rem;">{{.Score}} pts</strong>
+        </span>
+        {{end}}
+        {{end}}
+      </div>
+    </div>
+    <div class="sudoku-board" id="opp-board" style="opacity:0.8;">
+      {{if .Opponent}}
+        {{$ogrid := .Opponent.BoardState}}
+        {{range $r := seq 9}}{{range $c := seq 9}}
+          {{$val := index (index $ogrid $r) $c}}
+          <div id="opp-cell-{{$r}}-{{$c}}"
+               class="cell{{if isThickBorderRight $c}} thick-right{{end}}{{if isThickBorderBottom $r}} thick-bottom{{end}}"
+               style="cursor:default;">
+            {{if $val}}{{$val}}{{end}}
+          </div>
+        {{end}}{{end}}
+      {{else}}
+        {{range $r := seq 9}}{{range $c := seq 9}}
+          <div id="opp-cell-{{$r}}-{{$c}}"
+               class="cell{{if isThickBorderRight $c}} thick-right{{end}}{{if isThickBorderBottom $r}} thick-bottom{{end}}"
+               style="cursor:default;"></div>
+        {{end}}{{end}}
+      {{end}}
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div style="flex:1; min-width:180px;">
+    <div id="leaderboard-result"></div>
+  </div>
+</div>
+
+<script>
+let sbsSelRow=-1,sbsSelCol=-1;
+let sbsTStart=Date.now();
+setInterval(()=>{
+  const s=Math.floor((Date.now()-sbsTStart)/1000);
+  const el=document.getElementById('sbs-timer');
+  if(el)el.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+},1000);
+function sbsSelectCell(el){
+  document.querySelectorAll('#my-board .cell').forEach(c=>c.classList.remove('selected','cell-line','cell-peer'));
+  el.classList.add('selected');
+  sbsSelRow=+el.dataset.row; sbsSelCol=+el.dataset.col;
+  for(let i=0;i<9;i++){
+    const rc=document.getElementById('cell-'+sbsSelRow+'-'+i);
+    const cc=document.getElementById('cell-'+i+'-'+sbsSelCol);
+    if(rc&&rc!==el)rc.classList.add('cell-line');
+    if(cc&&cc!==el)cc.classList.add('cell-line');
+  }
+  const num=getCellDirectValue(el);
+  if(num>=1&&num<=9){
+    document.querySelectorAll('#my-board .cell').forEach(c=>{
+      if(c!==el&&getCellDirectValue(c)===num)c.classList.add('cell-peer');
+    });
+  }
+  highlightMatchingNotes(num);
+}
+function sbsDigit(v){
+  if(sbsSelRow<0)return;
+  document.getElementById('sbs-val-'+sbsSelRow+'-'+sbsSelCol).value=v;
+  document.getElementById('sbs-fill-'+sbsSelRow+'-'+sbsSelCol).requestSubmit();
+}
+document.addEventListener('keydown',e=>{
+  if(e.key>='1'&&e.key<='9')sbsDigit(+e.key);
+  if(e.key==='Backspace'||e.key==='Delete')sbsDigit(0);
+});
+function updateNumpad(boardSel){
+  const counts={};
+  for(let i=1;i<=9;i++)counts[i]=0;
+  document.querySelectorAll(boardSel+' .cell').forEach(c=>{
+    const n=getCellDirectValue(c);
+    if(n>=1&&n<=9)counts[n]++;
+  });
+  document.querySelectorAll('.numpad-btn[data-n]').forEach(btn=>{
+    const n=+btn.dataset.n;
+    if(counts[n]>=9){btn.textContent='✓';btn.classList.add('numpad-complete');}
+    else{btn.textContent=n;btn.classList.remove('numpad-complete');}
+  });
+}
+function enterNoteBtn(num){ enterNote(sbsSelRow,sbsSelCol,num); }
+clearAllNotes();
+document.body.addEventListener('htmx:wsAfterMessage',e=>{
+  try{
+    const msg=JSON.parse(e.detail.message);
+    if(msg.html){
+      const tmp=document.createElement('div');
+      tmp.innerHTML=msg.html;
+      const cellsSwapped=[];
+      tmp.querySelectorAll('[hx-swap-oob="true"]').forEach(el=>{
+        const t=document.getElementById(el.id);
+        if(t)t.outerHTML=el.outerHTML;
+        const m=el.id.match(/^cell-(\d+)-(\d+)$/);
+        if(m)cellsSwapped.push({r:+m[1],c:+m[2],id:el.id});
+      });
+      if(msg.type==='board_update'){
+        cellsSwapped.forEach(({r,c,id})=>{
+          const cel=document.getElementById(id);
+          if(!cel)return;
+          const val=getCellDirectValue(cel);
+          if(val){
+            setNotes(r,c,new Set());
+            if(!cel.classList.contains('wrong'))clearNotesByValue(r,c,val);
+          }
+        });
+        reapplyNotes();
+        updateNumpad('#my-board');
+        if(sbsSelRow>=0){const sel=document.getElementById('cell-'+sbsSelRow+'-'+sbsSelCol);if(sel)sbsSelectCell(sel);}
+      }
+    }
+  }catch(e){}
+});
+updateNumpad('#my-board');
+</script>
+{{end}}

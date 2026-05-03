@@ -1,0 +1,17 @@
+{{/* Single cell OOB swap partial.
+     Data:
+       Row, Col int — cell position
+       Value    int — 0 = empty
+       Correct  bool
+       Owner    string — player color ("blue"/"red") for competitive, "" otherwise
+       Mode     string — "solo","collaborative","competitive","sidebyside"
+       Opponent bool   — true = this is the read-only opponent cell
+       OOB      bool   — emit hx-swap-oob="true" attribute
+*/}}
+{{$id := cellID .Row .Col}}
+{{if .Opponent}}{{$id = oppCellID .Row .Col}}{{end}}
+<div id="{{$id}}"
+     {{if .OOB}}hx-swap-oob="true"{{end}}
+     class="cell{{if isThickBorderRight .Col}} thick-right{{end}}{{if isThickBorderBottom .Row}} thick-bottom{{end}}{{if and .Value (not .Correct) (not .Opponent)}} wrong{{end}}{{if .Owner}} player-{{.Owner}}{{end}}"
+     {{if not .Opponent}}data-row="{{.Row}}" data-col="{{.Col}}" onclick="{{if eq .Mode "solo"}}selectCell(this){{else if eq .Mode "sidebyside"}}sbsSelectCell(this){{else}}wsSelectCell(this){{end}}"{{end}}
+     style="{{if .Opponent}}cursor:default;{{end}}">{{if .Value}}{{.Value}}{{end}}</div>

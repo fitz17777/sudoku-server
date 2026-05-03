@@ -1,0 +1,13 @@
+{{define "title"}}Login — Sudoku{{end}}
+{{define "content"}}
+<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; gap:1.5rem;">
+  <div class="card" style="max-width:400px; width:100%; text-align:center;">
+    <h1 style="font-size:2rem; margin-bottom:0.5rem;">&#x25A3; Sudoku</h1>
+    <p style="color:#94a3b8; margin-bottom:1.5rem;">Sign in to track your scores and play with others.</p>
+    <a href="/login" class="btn btn-primary" style="width:100%; display:block; text-align:center; padding:0.75rem;">
+      Sign in with Keycloak
+    </a>
+  </div>
+</div>
+{{end}}
+{{template "layout/base.html" .}}

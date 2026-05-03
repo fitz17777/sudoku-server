@@ -1,0 +1,47 @@
+{{define "title"}}Leaderboard — {{difficultyLabel .Difficulty}} #{{.Number}}{{end}}
+{{define "content"}}
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap;">
+  <h1 style="margin:0;">Leaderboard</h1>
+  <span>{{difficultyLabel .Difficulty}} Puzzle #{{.Number}}</span>
+  <a href="/leaderboard/{{.Difficulty}}" class="btn btn-secondary">{{difficultyLabel .Difficulty}} Rankings</a>
+  <a href="/play/solo/{{.Difficulty}}/{{.Number}}" class="btn btn-primary" style="margin-left:auto;">Play this puzzle</a>
+</div>
+
+{{if .PlayerRank}}
+<div class="card" style="margin-bottom:1.5rem; border-color:#3b82f6;">
+  <p style="color:#94a3b8; font-size:0.85rem; margin-bottom:0.25rem;">Your ranking</p>
+  <p style="font-size:1.25rem; font-weight:700; color:#60a5fa;">#{{.PlayerRank}}</p>
+  {{if .PersonalBest}}
+  <p style="color:#94a3b8; font-size:0.85rem;">Best score: {{.PersonalBest.BestScore}} pts — Time: {{formatTime .PersonalBest.BestTimeS}}</p>
+  {{end}}
+</div>
+{{end}}
+
+<div class="card">
+  {{if .Entries}}
+  <table style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="color:#64748b; font-size:0.85rem; text-align:left; border-bottom:1px solid #334155;">
+        <th style="padding:0.5rem 0.75rem;">#</th>
+        <th style="padding:0.5rem 0.75rem;">Player</th>
+        <th style="padding:0.5rem 0.75rem; text-align:right;">Score</th>
+        <th style="padding:0.5rem 0.75rem; text-align:right;">Best Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Entries}}
+      <tr style="border-bottom:1px solid #1e293b;">
+        <td style="padding:0.6rem 0.75rem; color:#64748b; font-weight:700;">{{.Rank}}</td>
+        <td style="padding:0.6rem 0.75rem;">{{.DisplayName}}</td>
+        <td style="padding:0.6rem 0.75rem; text-align:right; font-weight:700; color:#60a5fa;">{{.Score}}</td>
+        <td style="padding:0.6rem 0.75rem; text-align:right; color:#94a3b8;">{{formatTime .BestTimeS}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p style="color:#64748b; text-align:center; padding:2rem;">No scores yet. Be the first to complete this puzzle!</p>
+  {{end}}
+</div>
+{{end}}
+{{template "layout/base.html" .}}

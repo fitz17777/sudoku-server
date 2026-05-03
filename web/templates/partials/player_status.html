@@ -1,0 +1,16 @@
+{{/* Player status OOB partial.
+     Data: Players ([]PlayerInfo), Room (*game.Room) */}}
+<div id="player-status" hx-swap-oob="true">
+  <h2>Players</h2>
+  {{range .Players}}
+  <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;">
+    <span class="badge badge-{{.Color}}">{{.DisplayName}}</span>
+  </div>
+  {{end}}
+  {{if eq (len .Players) 1}}
+  <p style="color:#94a3b8;font-size:0.85rem;margin-top:0.5rem;">Waiting for second player…</p>
+  {{end}}
+  {{if eq (len .Players) 0}}
+  <p style="color:#94a3b8;">No players yet.</p>
+  {{end}}
+</div>

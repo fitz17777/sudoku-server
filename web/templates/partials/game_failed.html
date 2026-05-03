@@ -1,0 +1,21 @@
+{{/* Game-failed OOB partial — swaps into #leaderboard-result */}}
+<div id="leaderboard-result" {{if .OOB}}hx-swap-oob="true"{{end}}>
+  <h2 style="color:#ef4444; margin-bottom:1rem;">&#10007; Puzzle Failed</h2>
+  <p style="color:#94a3b8; margin-bottom:1.25rem;">You made 3 mistakes and the puzzle is locked.</p>
+
+  {{range .Game.Players}}
+  <div style="margin-bottom:1rem; padding:1rem; background:#0f172a; border-radius:0.375rem;">
+    <p style="color:#94a3b8; font-size:0.85rem; margin-bottom:0.25rem;">{{.DisplayName}}</p>
+    <p style="font-size:1.1rem; font-weight:700; color:#64748b;">&#10007; &#10007; &#10007; — 3 mistakes</p>
+  </div>
+  {{end}}
+
+  <div style="display:flex; gap:0.75rem; margin-top:1.25rem; flex-wrap:wrap;">
+    <a href="/play/solo/{{.Game.PuzzleRef.Difficulty}}/{{.Game.PuzzleRef.Number}}"
+       class="btn btn-primary">Try Again</a>
+    <a href="/play/solo/{{.Game.PuzzleRef.Difficulty}}"
+       class="btn btn-secondary">New Puzzle</a>
+    <a href="/leaderboard/{{.Game.PuzzleRef.Difficulty}}/{{.Game.PuzzleRef.Number}}"
+       class="btn btn-secondary">Leaderboard</a>
+  </div>
+</div>

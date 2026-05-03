@@ -1,0 +1,105 @@
+{{define "title"}}Room {{.Room.Code}} — Sudoku{{end}}
+{{define "style"}}
+.lobby-code {
+  font-size:3rem; font-weight:800; letter-spacing:0.25em;
+  color:#60a5fa; font-family:monospace;
+}
+{{end}}
+{{define "content"}}
+<div id="lobby-area">
+<h1>Room Lobby</h1>
+<div style="display:flex; gap:1.5rem; flex-wrap:wrap; align-items:flex-start;">
+  <div class="card" style="flex:1; min-width:280px;">
+    <p style="color:#94a3b8; margin-bottom:0.5rem;">Share this code:</p>
+    <div class="lobby-code">{{.Room.Code}}</div>
+    <p style="color:#94a3b8; font-size:0.85rem; margin-top:0.5rem;">
+      Mode: <strong style="color:#e2e8f0;">{{.Room.Mode}}</strong>
+    </p>
+    <div style="margin-top:1rem;">
+      <p style="color:#94a3b8; font-size:0.8rem; margin-bottom:0.5rem;">Or scan to join:</p>
+      <img id="room-qr" alt="QR code" style="display:block; background:#fff; border-radius:0.375rem; width:160px; height:160px;">
+    </div>
+  </div>
+
+  <div id="player-status" class="card" style="flex:1; min-width:280px;">
+    <h2>Players</h2>
+    <p style="color:#94a3b8;">Waiting for players to join…</p>
+  </div>
+</div>
+
+{{if .IsHost}}
+<div class="card" style="margin-top:1.5rem; max-width:480px;" id="start-panel">
+  <h2>Game Settings</h2>
+  <div id="ws-game-start"
+       hx-ext="ws"
+       ws-connect="/ws?room={{.Room.Code}}">
+    <form ws-send>
+      <input type="hidden" name="type" value="start_game">
+      <input type="hidden" name="room_id" value="{{.Room.Code}}">
+      <div class="form-group">
+        <label>Game Mode</label>
+        <select name="mode">
+          <option value="collaborative"{{if eq .Room.Mode "collaborative"}} selected{{end}}>Collaborative — share one board, work together</option>
+          <option value="competitive"{{if eq .Room.Mode "competitive"}} selected{{end}}>Competitive — share one board, race for cells</option>
+          <option value="sidebyside"{{if eq .Room.Mode "sidebyside"}} selected{{end}}>Side by Side — separate boards, same puzzle</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Difficulty</label>
+        <select name="difficulty">
+          {{range .Difficulties}}
+          <option value="{{.}}">{{difficultyLabel .}} ({{basePoints .}} pts)</option>
+          {{end}}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-success" style="width:100%;">
+        Start Game
+      </button>
+    </form>
+  </div>
+</div>
+{{else}}
+<div class="card" style="margin-top:1.5rem;"
+     hx-ext="ws"
+     ws-connect="/ws?room={{.Room.Code}}">
+  <p style="color:#94a3b8;">Waiting for the host to start the game…</p>
+</div>
+{{end}}
+</div>{{/* end lobby-area */}}
+
+<div id="game-area" style="margin-top:1.5rem;"></div>
+{{end}}
+{{define "scripts"}}
+<script src="/static/js/qrcode.min.js"></script>
+<script>
+QRCode.toDataURL(
+  window.location.origin + '/play/multi/room/{{.Room.Code}}',
+  { width: 160, margin: 1, color: { dark: '#0f172a', light: '#ffffff' } }
+).then(function(url){ document.getElementById('room-qr').src = url; });
+document.body.addEventListener('htmx:wsAfterMessage', e => {
+  try {
+    const msg = JSON.parse(e.detail.message);
+    if (msg.type === 'game_started' && msg.html) {
+      const gameArea = document.getElementById('game-area');
+      gameArea.innerHTML = msg.html;
+      // Tell HTMX to process ws-connect and ws-send in the injected HTML
+      // so form submits go through WebSocket instead of HTTP POST
+      htmx.process(gameArea);
+      // innerHTML does not execute <script> tags — re-run them manually
+      gameArea.querySelectorAll('script').forEach(s => {
+        const el = document.createElement('script');
+        el.textContent = s.textContent;
+        document.head.appendChild(el);
+        el.remove();
+      });
+      const la = document.getElementById('lobby-area');
+      if (la) la.style.display = 'none';
+    }
+    if ((msg.type === 'player_joined' || msg.type === 'player_left') && msg.html) {
+      document.getElementById('player-status').innerHTML = msg.html;
+    }
+  } catch(e) {}
+});
+</script>
+{{end}}
+{{template "layout/base.html" .}}

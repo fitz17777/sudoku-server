@@ -1,0 +1,39 @@
+{{define "title"}}Create Room — Sudoku{{end}}
+{{define "content"}}
+<h1>Create Multiplayer Room</h1>
+<div class="card" style="max-width:480px;">
+  <form method="POST" action="/play/multi/create">
+    <div class="form-group">
+      <label>Game Mode</label>
+      <div style="display:flex; flex-direction:column; gap:0.75rem; margin-top:0.5rem;">
+        <label style="display:flex; align-items:flex-start; gap:0.75rem; cursor:pointer; color:#e2e8f0;">
+          <input type="radio" name="mode" value="collaborative" checked style="width:auto; margin-top:3px;">
+          <div>
+            <strong>Collaborative</strong>
+            <p style="color:#94a3b8; font-size:0.85rem; margin-top:0.2rem;">Both players work together on the same board. Shared score.</p>
+          </div>
+        </label>
+        <label style="display:flex; align-items:flex-start; gap:0.75rem; cursor:pointer; color:#e2e8f0;">
+          <input type="radio" name="mode" value="competitive" style="width:auto; margin-top:3px;">
+          <div>
+            <strong>Competitive</strong>
+            <p style="color:#94a3b8; font-size:0.85rem; margin-top:0.2rem;">Race to claim cells on the same board. Most correct cells wins.</p>
+          </div>
+        </label>
+        <label style="display:flex; align-items:flex-start; gap:0.75rem; cursor:pointer; color:#e2e8f0;">
+          <input type="radio" name="mode" value="sidebyside" style="width:auto; margin-top:3px;">
+          <div>
+            <strong>Side-by-Side</strong>
+            <p style="color:#94a3b8; font-size:0.85rem; margin-top:0.2rem;">Each player gets their own board. Watch each other's progress in real time.</p>
+          </div>
+        </label>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;">Create Room</button>
+  </form>
+</div>
+<p style="margin-top:1rem; color:#94a3b8; font-size:0.875rem;">
+  Already have a code? <a href="/play/multi/join" style="color:#60a5fa;">Join a room</a>
+</p>
+{{end}}
+{{template "layout/base.html" .}}

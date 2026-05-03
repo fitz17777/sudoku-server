@@ -1,0 +1,12 @@
+{{/* Error toast OOB partial.
+     Data: Message string */}}
+<div id="error-toast-{{.ID}}"
+     hx-swap-oob="beforeend:#toast-container"
+     style="background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;
+            border-radius:0.375rem;padding:0.75rem 1rem;font-size:0.875rem;
+            display:flex;align-items:center;gap:0.75rem;max-width:320px;">
+  <span>&#9888;</span>
+  <span>{{.Message}}</span>
+  <button onclick="this.parentElement.remove()"
+          style="background:none;border:none;color:#fca5a5;cursor:pointer;margin-left:auto;">&#10005;</button>
+</div>

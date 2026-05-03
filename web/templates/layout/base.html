@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{block "title" .}}Sudoku{{end}}</title>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      /* Responsive cell size: fills available width on phones, caps at 52px on desktop */
+      --cell: clamp(32px, calc((100vw - 2.5rem) / 9), 52px);
+    }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+    }
+    nav .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #60a5fa;
+      text-decoration: none;
+    }
+    nav .nav-links { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+    nav a { color: #94a3b8; text-decoration: none; font-size: 0.9rem; }
+    nav a:hover { color: #e2e8f0; }
+    nav .username { color: #60a5fa; font-size: 0.9rem; }
+    main { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem; }
+    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
+    h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem; }
+    .btn {
+      display: inline-block;
+      padding: 0.5rem 1.25rem;
+      border-radius: 0.375rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: #3b82f6; color: #fff; }
+    .btn-secondary { background: #334155; color: #e2e8f0; }
+    .btn-danger { background: #ef4444; color: #fff; }
+    .btn-success { background: #22c55e; color: #fff; }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+    }
+    input, select {
+      background: #0f172a;
+      color: #e2e8f0;
+      border: 1px solid #475569;
+      border-radius: 0.375rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.9rem;
+      width: 100%;
+    }
+    input:focus, select:focus { outline: 2px solid #3b82f6; border-color: #3b82f6; }
+    label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.25rem; }
+    .form-group { margin-bottom: 1rem; }
+    .error { color: #f87171; font-size: 0.875rem; margin-top: 0.5rem; }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-blue { background: #1d4ed8; color: #bfdbfe; }
+    .badge-red  { background: #991b1b; color: #fecaca; }
+    .badge-green { background: #166534; color: #bbf7d0; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+    #toast-container {
+      position: fixed; bottom: 1rem; right: 1rem;
+      display: flex; flex-direction: column; gap: 0.5rem;
+      z-index: 999;
+    }
+    /* Shared game board styles (used by all game modes) */
+    .sudoku-board {
+      display: inline-grid;
+      grid-template-columns: repeat(9, var(--cell));
+      border: 3px solid #64748b;
+      border-radius: 4px;
+    }
+    .cell {
+      width: var(--cell); height: var(--cell);
+      display: flex; align-items: center; justify-content: center;
+      font-size: clamp(0.9rem, calc(var(--cell) * 0.42), 1.45rem);
+      font-weight: 700;
+      border: 1px solid #334155;
+      cursor: pointer; user-select: none;
+      transition: background 0.1s;
+      position: relative;
+    }
+    .cell.clue { color: #e2e8f0; font-weight: 700; background: #1a2536; }
+    .cell.player-blue { color: #60a5fa; font-weight: 700; }
+    .cell.player-red  { color: #f87171; font-weight: 700; }
+    .cell.wrong { background: #450a0a !important; color: #f87171; }
+    .cell.selected { background: #1d4ed8 !important; }
+    .cell:hover:not(.clue):not(.selected) { background: #1e293b; }
+    .cell.thick-right  { border-right: 3px solid #64748b; }
+    .cell.thick-bottom { border-bottom: 3px solid #64748b; }
+    .numpad {
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: 0.3rem; margin-top: 0.75rem;
+      width: calc(var(--cell) * 9);
+    }
+    .numpad-btn {
+      padding: clamp(0.35rem, 1.5vw, 0.6rem);
+      font-size: clamp(0.85rem, 2.8vw, 1.1rem); font-weight: 600;
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 0.375rem; color: #e2e8f0;
+      cursor: pointer; text-align: center;
+    }
+    .numpad-btn:hover { background: #334155; }
+    .numpad-btn.erase { font-size: clamp(0.7rem, 2vw, 0.85rem); color: #94a3b8; }
+    .numpad-btn.numpad-complete { background: #14532d; color: #86efac; border-color: #166534; }
+    /* Row/column shading — subtle tint on cells in the same row/col as selected */
+    .cell.cell-line { background: #1a2d44; }
+    /* Same-number peers — more prominent highlight */
+    .cell.cell-peer { background: #0f3460; }
+    /* .selected and .wrong use !important so they always win over the above */
+    /* Pencil-mark notes grid inside a cell */
+    .cell-notes {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      pointer-events: none;
+      padding: 1px;
+    }
+    .cell-notes span {
+      font-size: calc(var(--cell) * 0.22); font-weight: 400; color: #cbd5e1;
+      display: flex; align-items: center; justify-content: center; line-height: 1;
+    }
+    .cell-notes span.note-bold { font-weight: 700; color: #f1f5f9; }
+    /* Note numpad row */
+    .numpad-notes {
+      display: grid; grid-template-columns: repeat(9, 1fr);
+      gap: 0.15rem; margin-top: 0.3rem;
+      width: calc(var(--cell) * 9);
+    }
+    .numpad-note-btn {
+      padding: clamp(0.15rem, 0.8vw, 0.3rem) 0;
+      font-size: clamp(0.55rem, 1.8vw, 0.78rem); font-weight: 500;
+      background: #0f172a; border: 1px solid #1e3a5f;
+      border-radius: 0.25rem; color: #60a5fa;
+      cursor: pointer; text-align: center;
+    }
+    .numpad-note-btn:hover { background: #1e293b; }
+    {{block "style" .}}{{end}}
+  </style>
+</head>
+<body>
+<nav>
+  <a class="logo" href="/">&#x25A3; Sudoku</a>
+  <div class="nav-links">
+    {{if .User}}
+      <a href="/play/solo">Solo</a>
+      <a href="/play/multi/create">Create Room</a>
+      <a href="/play/multi/join">Join Room</a>
+      <a href="/leaderboard">Leaderboards</a>
+      <span class="username">{{.User.DisplayName}}</span>
+      <a href="/logout">Logout</a>
+    {{else}}
+      <a href="/login">Login</a>
+    {{end}}
+  </div>
+</nav>
+<main>
+  {{block "content" .}}{{end}}
+</main>
+<div id="toast-container"></div>
+<script>
+// --- Pencil-mark note utilities (available to all game pages) ---
+const notes = {};
+function getNotes(r,c){ return notes[r+','+c]||(notes[r+','+c]=new Set()); }
+function setNotes(r,c,s){ notes[r+','+c]=s; }
+function clearNoteNumber(r,c,num){ getNotes(r,c).delete(num); }
+function clearAllNotes(){ for(const k in notes)delete notes[k]; }
+function getCellDirectValue(cell){
+  for(const node of cell.childNodes)
+    if(node.nodeType===Node.TEXT_NODE&&node.textContent.trim())
+      return parseInt(node.textContent.trim())||0;
+  return 0;
+}
+function renderNotes(r,c){
+  const cell=document.getElementById('cell-'+r+'-'+c);
+  if(!cell)return;
+  let grid=cell.querySelector('.cell-notes');
+  const s=getNotes(r,c);
+  if(s.size===0){if(grid)grid.remove();return;}
+  if(!grid){
+    grid=document.createElement('div');grid.className='cell-notes';
+    for(let i=1;i<=9;i++){const sp=document.createElement('span');sp.dataset.n=i;grid.appendChild(sp);}
+    cell.appendChild(grid);
+  }
+  grid.querySelectorAll('span').forEach(sp=>{const n=+sp.dataset.n;sp.textContent=s.has(n)?n:'';});
+}
+function reapplyNotes(){
+  for(let r=0;r<9;r++)for(let c=0;c<9;c++){
+    const cel=document.getElementById('cell-'+r+'-'+c);
+    if(!cel)continue;
+    if(getCellDirectValue(cel)===0)renderNotes(r,c);
+    else{const ng=cel.querySelector('.cell-notes');if(ng)ng.remove();}
+  }
+}
+function clearNotesByValue(row,col,val){
+  for(let c=0;c<9;c++)clearNoteNumber(row,c,val);
+  for(let r=0;r<9;r++)clearNoteNumber(r,col,val);
+  const br=Math.floor(row/3)*3,bc=Math.floor(col/3)*3;
+  for(let r=br;r<br+3;r++)for(let c=bc;c<bc+3;c++)clearNoteNumber(r,c,val);
+}
+function highlightMatchingNotes(num){
+  document.querySelectorAll('.cell-notes span.note-bold').forEach(s=>s.classList.remove('note-bold'));
+  if(num>=1&&num<=9){
+    document.querySelectorAll('.cell-notes span[data-n="'+num+'"]').forEach(s=>{
+      if(s.textContent.trim())s.classList.add('note-bold');
+    });
+  }
+}
+function enterNote(r,c,num){
+  const cel=document.getElementById('cell-'+r+'-'+c);
+  if(!cel||cel.dataset.clue==='1'||getCellDirectValue(cel))return;
+  const s=getNotes(r,c);
+  if(s.has(num))s.delete(num);else s.add(num);
+  renderNotes(r,c);
+}
+</script>
+{{block "scripts" .}}{{end}}
+</body>
+</html>

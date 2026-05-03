@@ -1,0 +1,84 @@
+# ---------------------------------------------------------------------------
+# TLS is terminated by Traefik on a separate VM.
+# Traefik forwards plain HTTP to this VM on INTERNAL_BIND_IP:8080.
+#
+# IMPORTANT — firewall this port:
+#   Port 8080 must only be reachable from the Traefik VM's internal IP.
+#   Do NOT expose it to the public internet.
+#   On the host:  ufw allow from <traefik-vm-ip> to any port 8080
+# ---------------------------------------------------------------------------
+
+services:
+  app:
+    build: .
+    ports:
+      # Bind only to the internal hypervisor interface so Traefik can reach it
+      # but the port is not exposed to the public internet.
+      # Set INTERNAL_BIND_IP in .env to the IP of this VM on the internal
+      # hypervisor network (e.g. 10.0.0.2). Defaults to all interfaces if unset
+      # — only do that if your firewall already blocks public access to 8080.
+      - "${INTERNAL_BIND_IP:-0.0.0.0}:8080:8080"
+    environment:
+      - PORT=8080
+      - BASE_URL=${BASE_URL}
+      - REDIS_ADDR=redis:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - OIDC_ISSUER=${OIDC_ISSUER}
+      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID}
+      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET}
+      - OIDC_REDIRECT_URL=${OIDC_REDIRECT_URL}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - PUZZLE_REGENERATE=${PUZZLE_REGENERATE:-false}
+    depends_on:
+      redis:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=10m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    user: "999:999"   # redis user/group in alpine image — avoids setuid call (incompatible with cap_drop: ALL)
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+    # Redis is NOT port-mapped — only reachable inside the internal Docker network
+    networks:
+      - internal
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  internal:
+    driver: bridge
+    # Not marked internal: true — the app needs outbound internet to reach Keycloak.
+    # Redis has no ports mapping so it remains inaccessible from outside Docker.

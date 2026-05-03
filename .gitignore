@@ -1,0 +1,17 @@
+# Compiled binary
+server
+/app
+
+# Environment — never commit real credentials
+.env
+
+# Claude Code local settings
+.claude/
+
+# Go build cache
+*.test
+*.out
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,18 @@
+{{/* Reusable 9x9 Sudoku board.
+     Data: Game (GameState), Puzzle (Puzzle), PlayerID (string), Mode (string), ReadOnly (bool) */}}
+<div class="sudoku-board" id="{{if .ReadOnly}}opp-board{{else}}board{{end}}">
+  {{$game := .Game}}
+  {{$mode := .Mode}}
+  {{$pid  := .PlayerID}}
+  {{range $r := seq 9}}{{range $c := seq 9}}
+    {{$val     := index (index $game.BoardState $r) $c}}
+    {{$cellKey := printf "%d,%d" $r $c}}
+    {{$owner   := index $game.CellOwners $cellKey}}
+    <div id="{{if $.ReadOnly}}opp-{{end}}cell-{{$r}}-{{$c}}"
+         class="cell{{if isThickBorderRight $c}} thick-right{{end}}{{if isThickBorderBottom $r}} thick-bottom{{end}}{{if $owner}} player-{{$owner}}{{end}}"
+         {{if not $.ReadOnly}}data-row="{{$r}}" data-col="{{$c}}" onclick="selectCell(this)"{{end}}
+         style="{{if $.ReadOnly}}cursor:default;{{end}}">
+      {{if $val}}{{$val}}{{end}}
+    </div>
+  {{end}}{{end}}
+</div>

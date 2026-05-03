@@ -1,0 +1,219 @@
+{{define "title"}}{{difficultyLabel .Game.PuzzleRef.Difficulty}} — Sudoku{{end}}
+{{define "style"}}
+.sudoku-wrap { display:flex; gap:2rem; flex-wrap:wrap; align-items:flex-start; justify-content:center; }
+#complete-modal {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.75); z-index:100;
+  align-items:center; justify-content:center;
+}
+#complete-modal.open { display:flex; }
+#pause-overlay {
+  display:none; position:absolute; inset:0;
+  background:rgba(15,23,42,0.93);
+  backdrop-filter:blur(6px);
+  z-index:10; border-radius:4px;
+  flex-direction:column; align-items:center; justify-content:center; gap:1.25rem;
+}
+#pause-overlay.active { display:flex; }
+{{end}}
+{{define "content"}}
+<div class="sudoku-wrap">
+  <div>
+    <!-- Header row: title / timer / hearts / live score / pause -->
+    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+      <h1 style="margin:0; font-size:1.25rem;">{{difficultyLabel .Game.PuzzleRef.Difficulty}}</h1>
+      <span id="timer" style="font-size:1rem; color:#94a3b8; font-family:monospace;">0:00</span>
+      <span id="mistake-pips" style="font-size:1.1rem; letter-spacing:0.1em;">
+        <span style="color:#ef4444;">&#9829;</span><span style="color:#ef4444;">&#9829;</span><span style="color:#ef4444;">&#9829;</span>
+      </span>
+      <span id="live-score" style="font-size:1rem; font-weight:700; color:#60a5fa; font-family:monospace; background:#1e293b; padding:0.2rem 0.6rem; border-radius:0.375rem;">-- pts</span>
+      <button id="pause-btn" onclick="togglePause()" class="btn btn-secondary" style="margin-left:auto; padding:0.35rem 0.75rem; font-size:0.85rem;">&#9646;&#9646; Pause</button>
+    </div>
+
+    <!-- Board wrapped for pause overlay -->
+    <div style="position:relative; display:inline-block;">
+      <div class="sudoku-board" id="board">
+        {{$puzzle := .Puzzle}}
+        {{$game   := .Game}}
+        {{range $r := seq 9}}{{range $c := seq 9}}
+          {{$clue := index (index $puzzle.Grid $r) $c}}
+          {{$val  := index (index $game.BoardState $r) $c}}
+          <div id="cell-{{$r}}-{{$c}}"
+               class="cell{{if $clue}} clue{{end}}{{if isThickBorderRight $c}} thick-right{{end}}{{if isThickBorderBottom $r}} thick-bottom{{end}}"
+               data-row="{{$r}}" data-col="{{$c}}" data-clue="{{if $clue}}1{{end}}"
+               onclick="selectCell(this)">
+            {{if $val}}{{$val}}{{end}}
+          </div>
+        {{end}}{{end}}
+      </div>
+      <div id="pause-overlay">
+        <p style="font-size:1.5rem; font-weight:700; color:#e2e8f0;">&#9646;&#9646; Paused</p>
+        <button onclick="togglePause()" class="btn btn-primary">&#9654; Resume</button>
+      </div>
+    </div>
+
+    <div class="numpad">
+      {{range seq 9}}<button class="numpad-btn" data-n="{{add . 1}}" onclick="enterDigit({{add . 1}})">{{add . 1}}</button>{{end}}
+      <button class="numpad-btn erase" onclick="enterDigit(0)">&#x232B; Erase</button>
+    </div>
+    <div style="font-size:0.7rem; color:#64748b; margin-top:0.5rem; margin-bottom:0.2rem;">Notes</div>
+    <div class="numpad-notes">
+      {{range seq 9}}<button class="numpad-note-btn" onclick="enterNoteBtn({{add . 1}})">{{add . 1}}</button>{{end}}
+    </div>
+  </div>
+
+  <div style="flex:1; min-width:220px; display:flex; flex-direction:column; gap:1rem;">
+    <!-- Hidden OOB sink — keeps score-panel data-mistakes up to date -->
+    <div id="score-panel" style="display:none;" data-mistakes="0"></div>
+
+    {{if .PersonalBest}}
+    <div class="card">
+      <h2>Personal Best</h2>
+      <p style="color:#60a5fa; font-size:1.25rem; font-weight:700;">{{.PersonalBest.BestScore}} pts</p>
+      <p style="color:#94a3b8; font-size:0.85rem;">Time: {{formatTime .PersonalBest.BestTimeS}}</p>
+      <p style="color:#94a3b8; font-size:0.85rem;">Attempts: {{.PersonalBest.Attempts}}</p>
+    </div>
+    {{end}}
+  </div>
+</div>
+
+<!-- game complete / failed modal — filled by HTMX OOB swap -->
+<div id="complete-modal">
+  <div id="leaderboard-result" class="card" style="max-width:520px;width:100%;max-height:90vh;overflow-y:auto;"></div>
+</div>
+{{end}}
+{{define "scripts"}}
+<script>
+let selRow=-1, selCol=-1;
+let timerStart=Date.now(), timerInterval;
+let paused=false, pauseStart=0, totalPausedMs=0;
+let mistakes=0, score=0;
+
+function getElapsed(){ return (Date.now()-timerStart-totalPausedMs)/1000; }
+
+function tickTimer(){
+  const s=Math.floor(getElapsed());
+  document.getElementById('timer').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+  document.getElementById('live-score').textContent=score+' pts';
+}
+timerInterval=setInterval(tickTimer,1000);
+tickTimer();
+
+function togglePause(){
+  if(paused){
+    totalPausedMs+=Date.now()-pauseStart;
+    paused=false;
+    document.getElementById('pause-btn').innerHTML='&#9646;&#9646; Pause';
+    document.getElementById('pause-overlay').classList.remove('active');
+    timerInterval=setInterval(tickTimer,1000);
+  } else {
+    pauseStart=Date.now();
+    paused=true;
+    document.getElementById('pause-btn').innerHTML='&#9654; Resume';
+    document.getElementById('pause-overlay').classList.add('active');
+    clearInterval(timerInterval);
+  }
+}
+
+function updateMistakePips(){
+  const el=document.getElementById('mistake-pips');
+  if(!el)return;
+  let html='';
+  for(let i=0;i<3;i++)
+    html+=i<(3-mistakes)
+      ?'<span style="color:#ef4444;">&#9829;</span>'
+      :'<span style="color:#334155;">&#9829;</span>';
+  el.innerHTML=html;
+}
+
+function selectCell(el){
+  document.querySelectorAll('#board .cell').forEach(c=>c.classList.remove('selected','cell-line','cell-peer'));
+  el.classList.add('selected');
+  selRow=+el.dataset.row; selCol=+el.dataset.col;
+  for(let i=0;i<9;i++){
+    const rc=document.getElementById('cell-'+selRow+'-'+i);
+    const cc=document.getElementById('cell-'+i+'-'+selCol);
+    if(rc&&rc!==el)rc.classList.add('cell-line');
+    if(cc&&cc!==el)cc.classList.add('cell-line');
+  }
+  const num=getCellDirectValue(el);
+  if(num>=1&&num<=9){
+    document.querySelectorAll('#board .cell').forEach(c=>{
+      if(c!==el&&getCellDirectValue(c)===num)c.classList.add('cell-peer');
+    });
+  }
+  highlightMatchingNotes(num);
+}
+function enterDigit(v){
+  if(selRow<0||paused)return;
+  const selEl=document.getElementById('cell-'+selRow+'-'+selCol);
+  if(selEl&&selEl.dataset.clue==='1')return;
+  fetch('/play/solo/{{.Game.GameID}}/cell',{
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:`row=${selRow}&col=${selCol}&value=${v}`
+  }).then(r=>r.text()).then(applyOOB);
+}
+function applyOOB(html){
+  const tmp=document.createElement('div');
+  tmp.innerHTML=html;
+  tmp.querySelectorAll('[hx-swap-oob="true"],[hx-swap-oob="outerHTML"]').forEach(el=>{
+    const t=document.getElementById(el.id);
+    if(t)t.outerHTML=el.outerHTML;
+    else document.body.appendChild(el);
+  });
+  // Sync mistakes and score from hidden score panel
+  const sp=document.getElementById('score-panel');
+  if(sp){
+    if(sp.dataset.mistakes!==undefined) mistakes=parseInt(sp.dataset.mistakes)||0;
+    if(sp.dataset.score!==undefined) score=parseInt(sp.dataset.score)||0;
+    updateMistakePips();
+    tickTimer();
+  }
+  // Auto-select filled cell, clear notes, reapply
+  if(selRow>=0){
+    const cel=document.getElementById('cell-'+selRow+'-'+selCol);
+    if(cel){
+      const val=getCellDirectValue(cel);
+      if(val){
+        setNotes(selRow,selCol,new Set());
+        if(!cel.classList.contains('wrong'))clearNotesByValue(selRow,selCol,val);
+      }
+      reapplyNotes();
+      selectCell(cel);
+    }
+  }
+  updateNumpad('#board');
+  // Open modal for game complete or failed
+  const r=document.getElementById('leaderboard-result');
+  if(r&&r.innerHTML.trim()){
+    document.getElementById('complete-modal').classList.add('open');
+    clearInterval(timerInterval);
+  }
+}
+function enterNoteBtn(num){ if(!paused)enterNote(selRow,selCol,num); }
+function updateNumpad(boardSel){
+  const counts={};
+  for(let i=1;i<=9;i++)counts[i]=0;
+  document.querySelectorAll(boardSel+' .cell').forEach(c=>{
+    const n=getCellDirectValue(c);
+    if(n>=1&&n<=9)counts[n]++;
+  });
+  document.querySelectorAll('.numpad-btn[data-n]').forEach(btn=>{
+    const n=+btn.dataset.n;
+    if(counts[n]>=9){btn.textContent='✓';btn.classList.add('numpad-complete');}
+    else{btn.textContent=n;btn.classList.remove('numpad-complete');}
+  });
+}
+updateNumpad('#board');
+document.addEventListener('keydown',e=>{
+  if(paused)return;
+  if(e.key>='1'&&e.key<='9')enterDigit(+e.key);
+  if(e.key==='Backspace'||e.key==='Delete')enterDigit(0);
+});
+document.getElementById('complete-modal').addEventListener('click',e=>{
+  if(e.target===e.currentTarget)e.currentTarget.classList.remove('open');
+});
+</script>
+{{end}}
+{{template "layout/base.html" .}}

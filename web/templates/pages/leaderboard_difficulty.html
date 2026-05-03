@@ -1,0 +1,43 @@
+{{define "title"}}{{difficultyLabel .Difficulty}} Leaderboard — Sudoku{{end}}
+{{define "content"}}
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem; flex-wrap:wrap;">
+  <h1 style="margin:0;">Leaderboards</h1>
+  <a href="/play/solo/{{.Difficulty}}" class="btn btn-primary" style="margin-left:auto;">Play {{difficultyLabel .Difficulty}}</a>
+</div>
+
+<div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.5rem;">
+  {{range $.Difficulties}}
+  <a href="/leaderboard/{{.}}"
+     class="btn {{if eq . $.Difficulty}}btn-primary{{else}}btn-secondary{{end}}">{{difficultyLabel .}}</a>
+  {{end}}
+</div>
+
+<div class="card">
+  <h2 style="margin-bottom:0.75rem;">Top Scores — {{difficultyLabel .Difficulty}}</h2>
+  {{if .TopScores}}
+  <table style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="color:#64748b; font-size:0.85rem; text-align:left; border-bottom:1px solid #334155;">
+        <th style="padding:0.5rem 0.75rem;">#</th>
+        <th style="padding:0.5rem 0.75rem;">Player</th>
+        <th style="padding:0.5rem 0.75rem; text-align:right;">Best Score</th>
+        <th style="padding:0.5rem 0.75rem; text-align:right;">Best Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .TopScores}}
+      <tr style="border-bottom:1px solid #1e293b;">
+        <td style="padding:0.6rem 0.75rem; color:#64748b; font-weight:700;">{{.Rank}}</td>
+        <td style="padding:0.6rem 0.75rem;">{{.DisplayName}}</td>
+        <td style="padding:0.6rem 0.75rem; text-align:right; font-weight:700; color:#60a5fa;">{{.BestScore}}</td>
+        <td style="padding:0.6rem 0.75rem; text-align:right; color:#94a3b8;">{{formatTime .BestTimeS}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p style="color:#64748b; text-align:center; padding:2rem;">No scores yet. Be the first to complete a {{difficultyLabel .Difficulty}} puzzle!</p>
+  {{end}}
+</div>
+{{end}}
+{{template "layout/base.html" .}}
