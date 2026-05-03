@@ -1,0 +1,23 @@
+{{/* Collaborative mode: update shared board (index 0) and shared score */}}
+{{if eq (printf "%s" .State.Mode) "collaborative"}}
+<div id="g2048m-board0" class="board-2048" hx-swap-oob="true">
+  {{range $r := seq 4}}{{range $c := seq 4}}
+  {{$v := index (index (index $.State.Boards 0) $r) $c}}
+  <div class="{{tile2048Class $v}}">{{if $v}}{{$v}}{{end}}</div>
+  {{end}}{{end}}
+</div>
+<div id="g2048m-score0" style="font-size:1.2rem; font-weight:700;" hx-swap-oob="true">{{index .State.Scores 0}}</div>
+{{else}}
+{{/* Competitive / side-by-side: update both boards */}}
+{{range $pi, $p := $.State.Players}}
+<div id="g2048m-board{{$pi}}" class="board-2048" style="--cell-2048:clamp(44px,10vw,62px);" hx-swap-oob="true">
+  {{range $r := seq 4}}{{range $c := seq 4}}
+  {{$board := index $.State.Boards $pi}}
+  {{$v := index (index $board $r) $c}}
+  <div class="{{tile2048Class $v}}">{{if $v}}{{$v}}{{end}}</div>
+  {{end}}{{end}}
+</div>
+<div id="g2048m-score{{$pi}}" style="font-size:1rem; font-weight:700;" hx-swap-oob="true">{{index $.State.Scores $pi}}</div>
+{{end}}
+{{end}}
+<span id="g2048m-status" style="font-size:0.95rem; color:#94a3b8;" hx-swap-oob="true">{{.TurnName}}</span>

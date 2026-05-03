@@ -238,15 +238,53 @@
     .chk-piece.p1-piece, .chk-piece.p1-king { background: #3b82f6; }
     .chk-piece.p2-piece, .chk-piece.p2-king { background: #ef4444; }
 
+    /* --- 2048 --- */
+    :root { --cell-2048: clamp(56px, calc((min(100vw, 380px) - 2rem - 24px) / 4), 80px); }
+    .board-2048 {
+      display: grid;
+      grid-template-columns: repeat(4, var(--cell-2048));
+      grid-template-rows: repeat(4, var(--cell-2048));
+      gap: 8px;
+      background: #bbada0;
+      border-radius: 8px;
+      padding: 8px;
+    }
+    .tile-2048 {
+      width: var(--cell-2048); height: var(--cell-2048);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; border-radius: 4px;
+      font-size: clamp(1rem, calc(var(--cell-2048) * 0.38), 1.75rem);
+    }
+    .tile-2048-0    { background: rgba(238,228,218,0.35); }
+    .tile-2048-2    { background: #eee4da; color: #776e65; }
+    .tile-2048-4    { background: #ede0c8; color: #776e65; }
+    .tile-2048-8    { background: #f2b179; color: #f9f6f2; }
+    .tile-2048-16   { background: #f59563; color: #f9f6f2; }
+    .tile-2048-32   { background: #f67c5f; color: #f9f6f2; }
+    .tile-2048-64   { background: #f65e3b; color: #f9f6f2; }
+    .tile-2048-128  { background: #edcf72; color: #f9f6f2; }
+    .tile-2048-256  { background: #edcc61; color: #f9f6f2; }
+    .tile-2048-512  { background: #edc850; color: #f9f6f2; }
+    .tile-2048-1024 { background: #edc53f; color: #f9f6f2; font-size: clamp(0.8rem, calc(var(--cell-2048) * 0.28), 1.2rem); }
+    .tile-2048-2048 { background: #edc22e; color: #f9f6f2; font-size: clamp(0.8rem, calc(var(--cell-2048) * 0.28), 1.2rem); }
+    .tile-2048-high { background: #3c3a32; color: #f9f6f2; font-size: clamp(0.7rem, calc(var(--cell-2048) * 0.24), 1rem); }
+    .dir-btn {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 0.375rem; color: #e2e8f0;
+      font-size: 1.25rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .dir-btn:hover { background: #334155; }
+
     {{block "style" .}}{{end}}
   </style>
 </head>
 <body>
 <nav>
-  <a class="logo" href="/">&#x25A3; Sudoku</a>
+  <a class="logo" href="/">Thorium Games</a>
   <div class="nav-links">
     {{if .User}}
-      <a href="/play/solo">Solo</a>
+      <a href="/play/solo">Games</a>
       <form action="/play/multi/create" method="POST" style="display:inline; margin:0;">
         <button type="submit" style="background:none; border:none; color:#94a3b8; font-size:0.9rem; cursor:pointer; padding:0;">Create Lobby</button>
       </form>

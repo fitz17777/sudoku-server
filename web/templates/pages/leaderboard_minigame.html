@@ -1,4 +1,4 @@
-{{define "title"}}{{gameTypeLabel .GameType}} Leaderboard — Games{{end}}
+{{define "title"}}{{gameTypeLabel .GameType}} Leaderboard — Thorium Games{{end}}
 {{define "content"}}
 <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem; flex-wrap:wrap;">
   <h1 style="margin:0;">{{gameTypeLabel .GameType}} Leaderboard</h1>
@@ -11,6 +11,8 @@
      class="btn {{if eq .GameType "connectfour"}}btn-primary{{else}}btn-secondary{{end}}">Connect Four</a>
   <a href="/leaderboard/game/checkers"
      class="btn {{if eq .GameType "checkers"}}btn-primary{{else}}btn-secondary{{end}}">Checkers</a>
+  <a href="/leaderboard/game/2048"
+     class="btn {{if eq .GameType "2048"}}btn-primary{{else}}btn-secondary{{end}}">2048</a>
 </div>
 
 <div class="card">

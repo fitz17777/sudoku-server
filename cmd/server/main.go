@@ -79,6 +79,7 @@ func main() {
 	// Build handlers
 	authH := handler.NewAuthHandler(oidcProvider, store, tmpl, cfg.BaseURL)
 	gameH := handler.NewGameHandler(store, tmpl)
+	game2048H := handler.NewGame2048Handler(store, tmpl)
 	multiH := handler.NewMultiHandler(store, tmpl, wsHub)
 	lbH := handler.NewLeaderboardHandler(store, tmpl)
 	wsH := handler.NewWSHandler(wsHub)
@@ -113,11 +114,20 @@ func main() {
 
 		r.Get("/logout", authH.Logout)
 
-		// Solo
-		r.Get("/play/solo", gameH.SelectPuzzle)
+		// Solo game selection
+		r.Get("/play/solo", gameH.SelectGame)
+		r.Get("/play/solo/sudoku", gameH.SelectPuzzle)
+
+		// Solo Sudoku
 		r.Get("/play/solo/{difficulty}", gameH.RandomGame)
 		r.Get("/play/solo/{difficulty}/{number}", gameH.StartGame)
 		r.Post("/play/solo/{gameID}/cell", gameH.CellFill)
+
+		// Solo 2048
+		r.Get("/play/solo/2048", game2048H.Landing)
+		r.Post("/play/solo/2048/new", game2048H.StartGame)
+		r.Get("/play/solo/2048/{gameID}", game2048H.GamePage)
+		r.Post("/play/solo/2048/{gameID}/move", game2048H.Move)
 
 		// Multiplayer — GET and POST both create a room and redirect to lobby
 		r.Get("/play/multi/create", multiH.CreateRoom)
@@ -133,6 +143,7 @@ func main() {
 		r.Get("/leaderboard/{difficulty}", lbH.ShowDifficulty)
 		r.Get("/leaderboard/{difficulty}/{number}", lbH.Show)
 		r.Get("/leaderboard/game/{gametype}", lbH.ShowMiniGame)
+		r.Get("/leaderboard/2048", lbH.Show2048)
 
 		// WebSocket
 		r.Get("/ws", wsH.ServeHTTP)

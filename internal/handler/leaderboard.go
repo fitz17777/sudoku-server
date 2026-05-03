@@ -47,12 +47,12 @@ func (h *LeaderboardHandler) ShowDifficulty(w http.ResponseWriter, r *http.Reque
 	})
 }
 
-// ShowMiniGame renders the wins leaderboard for a mini-game (tictactoe/connectfour/checkers).
+// ShowMiniGame renders the wins leaderboard for a mini-game (tictactoe/connectfour/checkers/2048).
 func (h *LeaderboardHandler) ShowMiniGame(w http.ResponseWriter, r *http.Request) {
 	user := mustUser(r)
 	gameType := chi.URLParam(r, "gametype")
 	switch gameType {
-	case game.GameTypeTicTacToe, game.GameTypeConnectFour, game.GameTypeCheckers:
+	case game.GameTypeTicTacToe, game.GameTypeConnectFour, game.GameTypeCheckers, game.GameType2048:
 	default:
 		http.Error(w, "unknown game type", http.StatusBadRequest)
 		return
@@ -64,6 +64,18 @@ func (h *LeaderboardHandler) ShowMiniGame(w http.ResponseWriter, r *http.Request
 		"User":     user,
 		"GameType": gameType,
 		"Entries":  entries,
+	})
+}
+
+// Show2048 renders the 2048 solo high-score leaderboard.
+func (h *LeaderboardHandler) Show2048(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(r)
+	entries, _ := h.store.Get2048Leaderboard(r.Context(), 20)
+	best, _ := h.store.Get2048PersonalBest(r.Context(), user.UserID)
+	renderPage(w, h.tmpl, "pages/leaderboard_2048.html", map[string]interface{}{
+		"User":       user,
+		"Entries":    entries,
+		"BestScore":  best,
 	})
 }
 

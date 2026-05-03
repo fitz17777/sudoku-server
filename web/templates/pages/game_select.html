@@ -1,0 +1,35 @@
+{{define "title"}}Play — Thorium Games{{end}}
+{{define "content"}}
+<h1>Choose a Game</h1>
+<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:1.5rem; max-width:900px;">
+
+  <a href="/play/solo/sudoku" class="card game-tile" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; gap:0.75rem; cursor:pointer; transition:border-color 0.15s;">
+    <div style="font-size:2.5rem; line-height:1;">&#x22EF;</div>
+    <div>
+      <h2 style="margin:0 0 0.25rem;">Sudoku</h2>
+      <p style="color:#94a3b8; font-size:0.875rem; margin:0;">Classic number puzzle — five difficulty levels with global leaderboards.</p>
+    </div>
+    <div style="margin-top:auto; display:flex; flex-wrap:wrap; gap:0.4rem;">
+      <span class="badge badge-blue">Solo</span>
+      <span class="badge badge-blue">Multiplayer</span>
+    </div>
+  </a>
+
+  <a href="/play/solo/2048" class="card game-tile" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; gap:0.75rem; cursor:pointer; transition:border-color 0.15s;">
+    <div style="font-size:2.5rem; font-weight:800; line-height:1; color:#edc22e;">2048</div>
+    <div>
+      <h2 style="margin:0 0 0.25rem;">2048</h2>
+      <p style="color:#94a3b8; font-size:0.875rem; margin:0;">Slide and merge tiles to reach 2048 — compete for the highest score.</p>
+    </div>
+    <div style="margin-top:auto; display:flex; flex-wrap:wrap; gap:0.4rem;">
+      <span class="badge badge-blue">Solo</span>
+      <span class="badge badge-blue">Multiplayer</span>
+    </div>
+  </a>
+
+</div>
+{{end}}
+{{define "style"}}
+.game-tile:hover { border-color: #60a5fa; }
+{{end}}
+{{template "layout/base.html" .}}

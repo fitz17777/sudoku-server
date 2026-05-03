@@ -26,7 +26,15 @@ func NewGameHandler(store *redisstore.Client, tmpl *templates.Renderer) *GameHan
 	return &GameHandler{store: store, tmpl: tmpl}
 }
 
-// SelectPuzzle shows the puzzle selection page.
+// SelectGame shows the tile-style game selection page for solo play.
+func (h *GameHandler) SelectGame(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(r)
+	renderPage(w, h.tmpl, "pages/game_select.html", map[string]interface{}{
+		"User": user,
+	})
+}
+
+// SelectPuzzle shows the Sudoku difficulty selection page.
 func (h *GameHandler) SelectPuzzle(w http.ResponseWriter, r *http.Request) {
 	user := mustUser(r)
 	renderPage(w, h.tmpl, "pages/singleplayer.html", map[string]interface{}{

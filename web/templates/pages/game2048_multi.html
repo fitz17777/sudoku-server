@@ -1,0 +1,121 @@
+{{define "game2048-content"}}
+<div style="display:flex; gap:2rem; flex-wrap:wrap; align-items:flex-start; justify-content:center;">
+
+  {{/* WS connection + move forms (hidden) */}}
+  <div id="g2048m-ws" hx-ext="ws" ws-connect="/ws?room={{.Room.Code}}" style="display:none;">
+    <form ws-send id="g2048m-form-up">
+      <input type="hidden" name="type" value="move_2048">
+      <input type="hidden" name="room_id" value="{{.Room.Code}}">
+      <input type="hidden" name="direction" value="up">
+    </form>
+    <form ws-send id="g2048m-form-down">
+      <input type="hidden" name="type" value="move_2048">
+      <input type="hidden" name="room_id" value="{{.Room.Code}}">
+      <input type="hidden" name="direction" value="down">
+    </form>
+    <form ws-send id="g2048m-form-left">
+      <input type="hidden" name="type" value="move_2048">
+      <input type="hidden" name="room_id" value="{{.Room.Code}}">
+      <input type="hidden" name="direction" value="left">
+    </form>
+    <form ws-send id="g2048m-form-right">
+      <input type="hidden" name="type" value="move_2048">
+      <input type="hidden" name="room_id" value="{{.Room.Code}}">
+      <input type="hidden" name="direction" value="right">
+    </form>
+  </div>
+
+  <div>
+    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+      <h2 style="margin:0; color:#edc22e;">2048</h2>
+      <span id="g2048m-status" style="font-size:0.95rem; color:#94a3b8;">{{.TurnName}}</span>
+    </div>
+
+    {{if eq (printf "%s" .State.Mode) "collaborative"}}
+    {{/* Collaborative: one shared board */}}
+    <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem;">
+      <div class="card" style="padding:0.4rem 0.9rem; text-align:center; min-width:70px;">
+        <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">SCORE</div>
+        <div id="g2048m-score0" style="font-size:1.2rem; font-weight:700;">{{index .State.Scores 0}}</div>
+      </div>
+    </div>
+    <div id="g2048m-board0" class="board-2048">
+      {{range $r := seq 4}}{{range $c := seq 4}}
+      {{$v := index (index (index $.State.Boards 0) $r) $c}}
+      <div class="{{tile2048Class $v}}">{{if $v}}{{$v}}{{end}}</div>
+      {{end}}{{end}}
+    </div>
+    {{else}}
+    {{/* Competitive / Side-by-side: two boards */}}
+    <div style="display:flex; gap:1.5rem; flex-wrap:wrap; align-items:flex-start;">
+      {{range $pi, $p := $.State.Players}}
+      <div>
+        <div style="display:flex; gap:0.5rem; margin-bottom:0.5rem; align-items:center;">
+          <span class="badge badge-{{$p.Color}}">{{$p.DisplayName}}</span>
+          <div class="card" style="padding:0.3rem 0.7rem; text-align:center;">
+            <div style="font-size:0.6rem; color:#94a3b8; text-transform:uppercase;">SCORE</div>
+            <div id="g2048m-score{{$pi}}" style="font-size:1rem; font-weight:700;">{{index $.State.Scores $pi}}</div>
+          </div>
+        </div>
+        <div id="g2048m-board{{$pi}}" class="board-2048" style="--cell-2048:clamp(44px,10vw,62px);">
+          {{range $r := seq 4}}{{range $c := seq 4}}
+          {{$board := index $.State.Boards $pi}}
+          {{$v := index (index $board $r) $c}}
+          <div class="{{tile2048Class $v}}">{{if $v}}{{$v}}{{end}}</div>
+          {{end}}{{end}}
+        </div>
+      </div>
+      {{end}}
+    </div>
+    {{end}}
+
+    {{/* Direction controls */}}
+    <div style="display:grid; grid-template-areas:'a up b' 'left down right'; grid-template-columns:3.5rem 3.5rem 3.5rem; grid-template-rows:3.5rem 3.5rem; gap:0.35rem; margin-top:0.75rem;">
+      <button id="g2048m-up"    onclick="g2048mMove('up')"    class="dir-btn" style="grid-area:up;    width:100%;height:100%;">↑</button>
+      <button id="g2048m-left"  onclick="g2048mMove('left')"  class="dir-btn" style="grid-area:left;  width:100%;height:100%;">←</button>
+      <button id="g2048m-down"  onclick="g2048mMove('down')"  class="dir-btn" style="grid-area:down;  width:100%;height:100%;">↓</button>
+      <button id="g2048m-right" onclick="g2048mMove('right')" class="dir-btn" style="grid-area:right; width:100%;height:100%;">→</button>
+    </div>
+  </div>
+
+  <div style="flex:1; min-width:220px;">
+    <div id="leaderboard-result"></div>
+  </div>
+</div>
+
+<div id="result-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:100; align-items:center; justify-content:center;">
+  <div id="result-modal-inner" class="card" style="max-width:400px; width:100%;"></div>
+</div>
+
+<script>
+function g2048mMove(dir){
+  var f=document.getElementById('g2048m-form-'+dir); if(f)f.requestSubmit();
+}
+document.addEventListener('keydown',function(e){
+  var m={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};
+  if(m[e.key]){e.preventDefault();g2048mMove(m[e.key]);}
+});
+document.body.addEventListener('htmx:wsAfterMessage',e=>{
+  try{
+    const msg=JSON.parse(e.detail.message);
+    if(msg.html){
+      const tmp=document.createElement('div'); tmp.innerHTML=msg.html;
+      tmp.querySelectorAll('[hx-swap-oob="true"]').forEach(el=>{
+        const t=document.getElementById(el.id); if(t)t.outerHTML=el.outerHTML;
+      });
+    }
+    if(msg.type==='game_complete'){
+      const lr=document.getElementById('leaderboard-result');
+      if(lr&&lr.innerHTML.trim()){
+        const m=document.getElementById('result-modal');
+        m.querySelector('#result-modal-inner').innerHTML=lr.innerHTML;
+        m.style.display='flex';
+      }
+    }
+  }catch(e){}
+});
+document.getElementById('result-modal').addEventListener('click',e=>{
+  if(e.target===e.currentTarget)e.currentTarget.style.display='none';
+});
+</script>
+{{end}}

@@ -98,6 +98,7 @@ func parseMessage(data []byte, user game.User, roomID string) InboundMsg {
 		Mode       string `json:"mode"`
 		Difficulty string `json:"difficulty"`
 		GameType   string `json:"game_type"`
+		Direction  string `json:"direction"`
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return InboundMsg{Type: "unknown"}
@@ -117,6 +118,7 @@ func parseMessage(data []byte, user game.User, roomID string) InboundMsg {
 		Mode:       raw.Mode,
 		Difficulty: raw.Difficulty,
 		GameType:   raw.GameType,
+		Direction:  raw.Direction,
 	}
 	if msg.RoomID == "" {
 		msg.RoomID = roomID

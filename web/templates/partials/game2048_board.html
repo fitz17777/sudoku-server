@@ -1,0 +1,21 @@
+<div id="g2048-board" class="board-2048" hx-swap-oob="true">
+  {{range $r := seq 4}}{{range $c := seq 4}}
+  {{$v := index (index $.Board $r) $c}}
+  <div class="{{tile2048Class $v}}">{{if $v}}{{$v}}{{end}}</div>
+  {{end}}{{end}}
+</div>
+<div id="g2048-score" style="font-size:1.2rem; font-weight:700;" hx-swap-oob="true">{{.Score}}</div>
+<div id="g2048-best" style="font-size:1.2rem; font-weight:700;" hx-swap-oob="true">{{.BestScore}}</div>
+{{if ne (printf "%s" .Status) "playing"}}
+<div id="g2048-status" hx-swap-oob="true">
+  {{if eq (printf "%s" .Status) "complete"}}
+  <div style="background:#14532d; border:1px solid #166534; color:#86efac; padding:0.75rem 1.5rem; border-radius:0.5rem; text-align:center; font-weight:700; font-size:1.1rem;">
+    You reached 2048! Score: {{.Score}}
+  </div>
+  {{else}}
+  <div style="background:#450a0a; border:1px solid #991b1b; color:#fca5a5; padding:0.75rem 1.5rem; border-radius:0.5rem; text-align:center; font-weight:700; font-size:1.1rem;">
+    Game Over — Score: {{.Score}}
+  </div>
+  {{end}}
+</div>
+{{end}}

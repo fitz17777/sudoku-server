@@ -37,20 +37,21 @@
         <label>Game</label>
         <select name="game_type" id="sel-game" onchange="onGameChange()">
           <option value="sudoku">Sudoku</option>
+          <option value="2048">2048</option>
           <option value="tictactoe">Tic Tac Toe</option>
           <option value="connectfour">Connect Four</option>
           <option value="checkers">Checkers</option>
         </select>
       </div>
-      <div id="sudoku-settings">
-        <div class="form-group">
-          <label>Game Mode</label>
-          <select name="mode">
-            <option value="collaborative">Collaborative — share one board, work together</option>
-            <option value="competitive">Competitive — share one board, race for cells</option>
-            <option value="sidebyside">Side by Side — separate boards, same puzzle</option>
-          </select>
-        </div>
+      <div id="mode-settings" class="form-group">
+        <label>Game Mode</label>
+        <select name="mode">
+          <option value="collaborative">Collaborative — work together on one board</option>
+          <option value="competitive">Competitive — race to win</option>
+          <option value="sidebyside">Side by Side — separate boards</option>
+        </select>
+      </div>
+      <div id="difficulty-settings">
         <div class="form-group">
           <label>Difficulty</label>
           <select name="difficulty">
@@ -82,8 +83,12 @@
 <script>
 function onGameChange(){
   const v = document.getElementById('sel-game').value;
-  const s = document.getElementById('sudoku-settings');
-  if(s) s.style.display = (v === 'sudoku') ? '' : 'none';
+  const needsMode = (v === 'sudoku' || v === '2048');
+  const needsDiff = (v === 'sudoku');
+  const ms = document.getElementById('mode-settings');
+  const ds = document.getElementById('difficulty-settings');
+  if(ms) ms.style.display = needsMode ? '' : 'none';
+  if(ds) ds.style.display = needsDiff ? '' : 'none';
 }
 QRCode.toDataURL(
   window.location.origin + '/play/multi/room/{{.Room.Code}}',

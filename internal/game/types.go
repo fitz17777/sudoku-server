@@ -83,6 +83,7 @@ const (
 	GameTypeTicTacToe   = "tictactoe"
 	GameTypeConnectFour = "connectfour"
 	GameTypeCheckers    = "checkers"
+	GameType2048        = "2048"
 )
 
 // GameMode for multiplayer.
@@ -264,4 +265,39 @@ type WinLeaderboardEntry struct {
 	Rank        int
 	DisplayName string
 	Wins        int
+}
+
+// Game2048State is the solo 2048 game state stored in Redis.
+type Game2048State struct {
+	GameID    string     `json:"game_id"`
+	UserID    string     `json:"user_id"`
+	Board     [4][4]int  `json:"board"`
+	Score     int        `json:"score"`
+	BestScore int        `json:"best_score"` // player's all-time best at game start
+	Status    GameStatus `json:"status"`
+	StartedAt time.Time  `json:"started_at"`
+}
+
+// Game2048MultiState is the multiplayer 2048 state stored in Redis.
+// Collaborative: Boards[0] is the shared board, Turn is the current player's userID.
+// Competitive/SideBySide: Boards[i] is player i's board, both play simultaneously.
+type Game2048MultiState struct {
+	GameID    string     `json:"game_id"`
+	RoomCode  string     `json:"room_code"`
+	Mode      GameMode   `json:"mode"`
+	Players   []Player   `json:"players"`
+	Boards    [2][4][4]int `json:"boards"`
+	Scores    [2]int     `json:"scores"`
+	Over      [2]bool    `json:"over"`    // true when a player's board has no moves
+	Turn      string     `json:"turn"`    // collaborative: whose turn it is
+	Status    GameStatus `json:"status"`
+	WinnerID  string     `json:"winner_id"`
+	StartedAt time.Time  `json:"started_at"`
+}
+
+// Game2048LeaderboardEntry is one row in the 2048 high-score leaderboard.
+type Game2048LeaderboardEntry struct {
+	Rank        int
+	DisplayName string
+	BestScore   int
 }

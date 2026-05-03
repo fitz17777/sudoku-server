@@ -15,7 +15,9 @@ type InboundMsg struct {
 	Mode       string
 	Difficulty string
 	Number     int
-	GameType   string // "sudoku", "tictactoe", "connectfour", "checkers"
+	GameType   string // "sudoku", "tictactoe", "connectfour", "checkers", "2048"
+	// move_2048 fields
+	Direction string // "up", "down", "left", "right"
 }
 
 // OutboundMsg is a JSON message sent to WebSocket clients.

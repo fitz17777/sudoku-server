@@ -83,6 +83,8 @@ func (r *Room) dispatch(ctx context.Context, msg InboundMsg) {
 		r.handleConnectFourDrop(ctx, msg)
 	case "checkers_click":
 		r.handleCheckersClick(ctx, msg)
+	case "move_2048":
+		r.handle2048Move(ctx, msg)
 	default:
 		log.Printf("room %s: unknown message type %q from %s", r.Code, msg.Type, msg.UserID)
 	}
@@ -137,6 +139,8 @@ func (r *Room) handleStartGame(ctx context.Context, msg InboundMsg) {
 		r.startConnectFour(ctx, room, msg)
 	case game.GameTypeCheckers:
 		r.startCheckers(ctx, room, msg)
+	case game.GameType2048:
+		r.start2048(ctx, room, msg)
 	default:
 		r.startSudoku(ctx, room, msg)
 	}
@@ -1436,4 +1440,186 @@ func buildSharedGameState(playerIDs []string, clients map[string]*Client, puzzle
 		StartedAt:  time.Now(),
 		Status:     game.StatusPlaying,
 	}
+}
+
+// ============================================================
+// 2048 multiplayer
+// ============================================================
+
+func (r *Room) start2048(ctx context.Context, room *game.Room, msg InboundMsg) {
+	mode := game.GameMode(msg.Mode)
+	if mode == "" {
+		mode = game.ModeCollaborative
+	}
+	room.Mode = mode
+	room.Status = game.StatusPlaying
+	if err := r.store.StoreRoom(ctx, *room); err != nil {
+		log.Printf("room %s: start2048 storeRoom: %v", r.Code, err)
+		return
+	}
+
+	players := buildMiniGamePlayers(room.Players, r.clients)
+	if len(players) < 2 {
+		log.Printf("room %s: start2048 not enough players", r.Code)
+		return
+	}
+
+	gs := game.Game2048MultiState{
+		GameID:    r.Code + "_2048",
+		RoomCode:  r.Code,
+		Mode:      mode,
+		Players:   players,
+		Status:    game.StatusPlaying,
+		StartedAt: time.Now(),
+	}
+	if mode == game.ModeCollaborative {
+		gs.Boards[0] = game.NewBoard2048()
+		gs.Turn = players[0].UserID
+	} else {
+		for i := range gs.Boards {
+			gs.Boards[i] = game.NewBoard2048()
+		}
+	}
+
+	if err := r.store.Store2048MultiState(ctx, gs); err != nil {
+		log.Printf("room %s: start2048 store: %v", r.Code, err)
+		return
+	}
+
+	html := r.renderPageBlock("pages/game2048_multi.html", "game2048-content", map[string]interface{}{
+		"State":    &gs,
+		"Room":     room,
+		"TurnName": multi2048TurnName(&gs),
+	})
+	r.broadcast(buildWSMsg("game_started", html))
+}
+
+func (r *Room) handle2048Move(ctx context.Context, msg InboundMsg) {
+	gs, err := r.store.Get2048MultiState(ctx, r.Code+"_2048")
+	if err != nil {
+		log.Printf("room %s: handle2048Move get state: %v", r.Code, err)
+		return
+	}
+	if gs.Status != game.StatusPlaying {
+		return
+	}
+
+	playerIdx := -1
+	for i, p := range gs.Players {
+		if p.UserID == msg.UserID {
+			playerIdx = i
+			break
+		}
+	}
+	if playerIdx < 0 {
+		return
+	}
+
+	boardIdx := 0
+	if gs.Mode == game.ModeCollaborative {
+		if gs.Turn != msg.UserID {
+			return
+		}
+	} else {
+		boardIdx = playerIdx
+		if gs.Over[playerIdx] {
+			return
+		}
+	}
+
+	newBoard, points, changed := game.Move2048(gs.Boards[boardIdx], msg.Direction)
+	if !changed {
+		return
+	}
+	gs.Boards[boardIdx] = game.SpawnTile(newBoard)
+	gs.Scores[boardIdx] += points
+
+	won := game.Is2048Won(gs.Boards[boardIdx])
+	over := game.Is2048Over(gs.Boards[boardIdx])
+
+	if gs.Mode == game.ModeCollaborative {
+		if won || over {
+			if won {
+				gs.Status = game.StatusComplete
+			} else {
+				gs.Status = game.StatusFailed
+			}
+			r.store.Store2048MultiState(ctx, *gs)
+			room, _ := r.store.GetRoom(ctx, r.Code)
+			r.finalize2048Game(ctx, gs, room)
+			return
+		}
+		gs.Turn = gs.Players[1-playerIdx].UserID
+	} else {
+		if won || over {
+			gs.Over[playerIdx] = true
+			if won {
+				gs.WinnerID = msg.UserID
+				gs.Status = game.StatusComplete
+				r.store.Store2048MultiState(ctx, *gs)
+				r.store.RecordWin(ctx, game.GameType2048, msg.UserID, gs.Players[playerIdx].DisplayName)
+				room, _ := r.store.GetRoom(ctx, r.Code)
+				r.finalize2048Game(ctx, gs, room)
+				return
+			}
+			if gs.Over[0] && gs.Over[1] {
+				gs.Status = game.StatusComplete
+				if gs.Scores[0] > gs.Scores[1] {
+					gs.WinnerID = gs.Players[0].UserID
+					r.store.RecordWin(ctx, game.GameType2048, gs.Players[0].UserID, gs.Players[0].DisplayName)
+				} else if gs.Scores[1] > gs.Scores[0] {
+					gs.WinnerID = gs.Players[1].UserID
+					r.store.RecordWin(ctx, game.GameType2048, gs.Players[1].UserID, gs.Players[1].DisplayName)
+				}
+				r.store.Store2048MultiState(ctx, *gs)
+				room, _ := r.store.GetRoom(ctx, r.Code)
+				r.finalize2048Game(ctx, gs, room)
+				return
+			}
+		}
+	}
+
+	if err := r.store.Store2048MultiState(ctx, *gs); err != nil {
+		log.Printf("room %s: handle2048Move store: %v", r.Code, err)
+	}
+	r.broadcast2048Update(gs)
+}
+
+func (r *Room) finalize2048Game(ctx context.Context, gs *game.Game2048MultiState, room *game.Room) {
+	if room != nil {
+		room.Status = game.StatusComplete
+		r.store.StoreRoom(ctx, *room)
+	}
+	html := r.renderMiniGameResult(ctx, gs.Players, gs.WinnerID, game.GameType2048,
+		nil, [3][3]int{}, [6][7]int{})
+	r.broadcast(buildWSMsg("game_complete", html))
+}
+
+func (r *Room) broadcast2048Update(gs *game.Game2048MultiState) {
+	html := r.renderPartial("partials/game2048_update.html", map[string]interface{}{
+		"State":    gs,
+		"TurnName": multi2048TurnName(gs),
+	})
+	r.broadcast(buildWSMsg("board_update", html))
+}
+
+func multi2048TurnName(gs *game.Game2048MultiState) string {
+	if gs.Status != game.StatusPlaying {
+		if gs.WinnerID == "" {
+			return "Draw!"
+		}
+		for _, p := range gs.Players {
+			if p.UserID == gs.WinnerID {
+				return p.DisplayName + " wins!"
+			}
+		}
+	}
+	if gs.Mode == game.ModeCollaborative {
+		for _, p := range gs.Players {
+			if p.UserID == gs.Turn {
+				return p.DisplayName + "'s turn"
+			}
+		}
+	}
+	return "Playing…"
 }

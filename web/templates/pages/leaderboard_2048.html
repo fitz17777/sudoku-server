@@ -1,0 +1,42 @@
+{{define "title"}}2048 Leaderboard — Thorium Games{{end}}
+{{define "content"}}
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem; flex-wrap:wrap;">
+  <h1 style="margin:0;">2048 High Scores</h1>
+</div>
+
+{{if .BestScore}}
+<p style="color:#60a5fa; margin-bottom:1rem;">Your personal best: <strong>{{.BestScore}}</strong></p>
+{{end}}
+
+<div class="card">
+  <h2 style="margin-bottom:0.75rem;">Top Players</h2>
+  {{if .Entries}}
+  <table style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="color:#64748b; font-size:0.85rem; text-align:left; border-bottom:1px solid #334155;">
+        <th style="padding:0.5rem 0.75rem;">#</th>
+        <th style="padding:0.5rem 0.75rem;">Player</th>
+        <th style="padding:0.5rem 0.75rem; text-align:right;">Best Score</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Entries}}
+      <tr style="border-bottom:1px solid #1e293b;">
+        <td style="padding:0.6rem 0.75rem; color:#64748b; font-weight:700;">{{.Rank}}</td>
+        <td style="padding:0.6rem 0.75rem;">{{.DisplayName}}</td>
+        <td style="padding:0.6rem 0.75rem; text-align:right; font-weight:700; color:#edc22e;">{{.BestScore}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p style="color:#64748b; text-align:center; padding:2rem;">No scores yet. Be the first to play!</p>
+  {{end}}
+</div>
+
+<div style="margin-top:1.5rem; display:flex; gap:0.75rem; flex-wrap:wrap;">
+  <a href="/play/solo/2048" class="btn btn-primary">Play 2048</a>
+  <a href="/leaderboard" class="btn btn-secondary">Sudoku Leaderboard</a>
+</div>
+{{end}}
+{{template "layout/base.html" .}}

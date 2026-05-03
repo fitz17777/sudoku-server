@@ -177,8 +177,21 @@ func FuncMap() template.FuncMap {
 				return "Connect Four"
 			case game.GameTypeCheckers:
 				return "Checkers"
+			case game.GameType2048:
+				return "2048"
 			}
 			return "Sudoku"
+		},
+
+		// tile2048Class returns the CSS class string for a 2048 tile value.
+		"tile2048Class": func(v int) string {
+			if v == 0 {
+				return "tile-2048 tile-2048-0"
+			}
+			if v <= 2048 {
+				return fmt.Sprintf("tile-2048 tile-2048-%d", v)
+			}
+			return "tile-2048 tile-2048-high"
 		},
 	}
 }
