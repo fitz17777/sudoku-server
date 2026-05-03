@@ -1,0 +1,173 @@
+{{define "title"}}Leaderboards — Thorium Games{{end}}
+{{define "style"}}
+.lb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 1.25rem;
+}
+.lb-card { display: flex; flex-direction: column; gap: 0.75rem; }
+.lb-card h2 { margin: 0; font-size: 1.1rem; }
+.lb-card-head {
+  display: flex; align-items: center; gap: 0.6rem;
+  border-bottom: 1px solid #334155; padding-bottom: 0.6rem;
+}
+.lb-card-icon { font-size: 1.4rem; line-height: 1; }
+.lb-mini { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.lb-mini td { padding: 0.3rem 0.4rem; }
+.lb-mini tr:not(:last-child) td { border-bottom: 1px solid #1e293b; }
+.lb-rank { color: #64748b; font-weight: 700; width: 1.5rem; }
+.lb-val  { text-align: right; font-weight: 700; }
+.lb-empty { color: #475569; font-size: 0.85rem; padding: 0.5rem 0; }
+.lb-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: auto; }
+.lb-actions .btn { font-size: 0.8rem; padding: 0.35rem 0.85rem; }
+.diff-links { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.diff-links .btn { font-size: 0.78rem; padding: 0.3rem 0.7rem; }
+{{end}}
+{{define "content"}}
+<h1 style="margin-bottom: 1.25rem;">Leaderboards</h1>
+<div class="lb-grid">
+
+  {{/* ---- Sudoku ---- */}}
+  <div class="card lb-card">
+    <div class="lb-card-head">
+      <span class="lb-card-icon">&#x22EF;</span>
+      <h2>Sudoku</h2>
+    </div>
+    {{if .SudokuTop}}
+    <div style="font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Expert — Top Players</div>
+    <table class="lb-mini">
+      {{range .SudokuTop}}
+      <tr>
+        <td class="lb-rank">{{.Rank}}</td>
+        <td>{{.DisplayName}}</td>
+        <td class="lb-val" style="color:#60a5fa;">{{.BestScore}}</td>
+      </tr>
+      {{end}}
+    </table>
+    {{else}}
+    <p class="lb-empty">No completions yet.</p>
+    {{end}}
+    <div style="font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; margin-top:0.25rem;">Browse by difficulty</div>
+    <div class="diff-links">
+      {{range .Difficulties}}
+      <a href="/leaderboard/{{.}}" class="btn btn-secondary">{{difficultyLabel .}}</a>
+      {{end}}
+    </div>
+  </div>
+
+  {{/* ---- 2048 ---- */}}
+  <div class="card lb-card">
+    <div class="lb-card-head">
+      <span class="lb-card-icon" style="font-weight:800; color:#edc22e;">2048</span>
+      <h2>2048</h2>
+    </div>
+    {{if .G2048Top}}
+    <div style="font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Solo — High Scores</div>
+    <table class="lb-mini">
+      {{range .G2048Top}}
+      <tr>
+        <td class="lb-rank">{{.Rank}}</td>
+        <td>{{.DisplayName}}</td>
+        <td class="lb-val" style="color:#edc22e;">{{.BestScore}}</td>
+      </tr>
+      {{end}}
+    </table>
+    {{else}}
+    <p class="lb-empty">No scores yet — be first!</p>
+    {{end}}
+    {{if .G2048WinsTop}}
+    <div style="font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; margin-top:0.25rem;">Multiplayer — Wins</div>
+    <table class="lb-mini">
+      {{range .G2048WinsTop}}
+      <tr>
+        <td class="lb-rank">{{.Rank}}</td>
+        <td>{{.DisplayName}}</td>
+        <td class="lb-val" style="color:#60a5fa;">{{.Wins}}W</td>
+      </tr>
+      {{end}}
+    </table>
+    {{end}}
+    <div class="lb-actions">
+      <a href="/leaderboard/2048" class="btn btn-secondary">Solo Scores</a>
+      <a href="/leaderboard/game/2048" class="btn btn-secondary">Multi Wins</a>
+    </div>
+  </div>
+
+  {{/* ---- Tic Tac Toe ---- */}}
+  <div class="card lb-card">
+    <div class="lb-card-head">
+      <span class="lb-card-icon">✕○</span>
+      <h2>Tic Tac Toe</h2>
+    </div>
+    {{if .TTTTop}}
+    <div style="font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Most Wins</div>
+    <table class="lb-mini">
+      {{range .TTTTop}}
+      <tr>
+        <td class="lb-rank">{{.Rank}}</td>
+        <td>{{.DisplayName}}</td>
+        <td class="lb-val" style="color:#60a5fa;">{{.Wins}}W</td>
+      </tr>
+      {{end}}
+    </table>
+    {{else}}
+    <p class="lb-empty">No games played yet.</p>
+    {{end}}
+    <div class="lb-actions">
+      <a href="/leaderboard/game/tictactoe" class="btn btn-secondary">Full Leaderboard</a>
+    </div>
+  </div>
+
+  {{/* ---- Connect Four ---- */}}
+  <div class="card lb-card">
+    <div class="lb-card-head">
+      <span class="lb-card-icon">&#x25CF;</span>
+      <h2>Connect Four</h2>
+    </div>
+    {{if .C4Top}}
+    <div style="font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Most Wins</div>
+    <table class="lb-mini">
+      {{range .C4Top}}
+      <tr>
+        <td class="lb-rank">{{.Rank}}</td>
+        <td>{{.DisplayName}}</td>
+        <td class="lb-val" style="color:#60a5fa;">{{.Wins}}W</td>
+      </tr>
+      {{end}}
+    </table>
+    {{else}}
+    <p class="lb-empty">No games played yet.</p>
+    {{end}}
+    <div class="lb-actions">
+      <a href="/leaderboard/game/connectfour" class="btn btn-secondary">Full Leaderboard</a>
+    </div>
+  </div>
+
+  {{/* ---- Checkers ---- */}}
+  <div class="card lb-card">
+    <div class="lb-card-head">
+      <span class="lb-card-icon">&#x26C0;</span>
+      <h2>Checkers</h2>
+    </div>
+    {{if .CheckersTop}}
+    <div style="font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Most Wins</div>
+    <table class="lb-mini">
+      {{range .CheckersTop}}
+      <tr>
+        <td class="lb-rank">{{.Rank}}</td>
+        <td>{{.DisplayName}}</td>
+        <td class="lb-val" style="color:#60a5fa;">{{.Wins}}W</td>
+      </tr>
+      {{end}}
+    </table>
+    {{else}}
+    <p class="lb-empty">No games played yet.</p>
+    {{end}}
+    <div class="lb-actions">
+      <a href="/leaderboard/game/checkers" class="btn btn-secondary">Full Leaderboard</a>
+    </div>
+  </div>
+
+</div>
+{{end}}
+{{template "layout/base.html" .}}

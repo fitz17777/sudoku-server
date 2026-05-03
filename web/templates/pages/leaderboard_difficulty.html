@@ -1,6 +1,7 @@
 {{define "title"}}{{difficultyLabel .Difficulty}} Leaderboard — Sudoku{{end}}
 {{define "content"}}
 <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem; flex-wrap:wrap;">
+  <a href="/leaderboard" class="btn btn-secondary" style="font-size:0.8rem; padding:0.3rem 0.7rem;">&#8592; All Leaderboards</a>
   <h1 style="margin:0;">Leaderboards</h1>
   <a href="/play/solo/{{.Difficulty}}" class="btn btn-primary" style="margin-left:auto;">Play {{difficultyLabel .Difficulty}}</a>
 </div>

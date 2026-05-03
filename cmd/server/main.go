@@ -137,9 +137,7 @@ func main() {
 		r.Get("/play/multi/room/{code}", multiH.RoomPage)
 
 		// Leaderboard
-		r.Get("/leaderboard", func(w http.ResponseWriter, req *http.Request) {
-			http.Redirect(w, req, "/leaderboard/easy", http.StatusFound)
-		})
+		r.Get("/leaderboard", lbH.Hub)
 		r.Get("/leaderboard/{difficulty}", lbH.ShowDifficulty)
 		r.Get("/leaderboard/{difficulty}/{number}", lbH.Show)
 		r.Get("/leaderboard/game/{gametype}", lbH.ShowMiniGame)

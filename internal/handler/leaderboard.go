@@ -20,6 +20,30 @@ func NewLeaderboardHandler(store *redisstore.Client, tmpl *templates.Renderer) *
 	return &LeaderboardHandler{store: store, tmpl: tmpl}
 }
 
+// Hub renders the leaderboard landing page showing top entries for all games.
+func (h *LeaderboardHandler) Hub(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(r)
+	ctx := r.Context()
+
+	g2048Top, _ := h.store.Get2048Leaderboard(ctx, 3)
+	tttTop, _ := h.store.GetWinLeaderboard(ctx, game.GameTypeTicTacToe, 3)
+	c4Top, _ := h.store.GetWinLeaderboard(ctx, game.GameTypeConnectFour, 3)
+	checkersTop, _ := h.store.GetWinLeaderboard(ctx, game.GameTypeCheckers, 3)
+	g2048WinsTop, _ := h.store.GetWinLeaderboard(ctx, game.GameType2048, 3)
+	sudokuTop, _ := h.store.GetDifficultyLeaderboard(ctx, game.Expert, 3)
+
+	renderPage(w, h.tmpl, "pages/leaderboard_hub.html", map[string]interface{}{
+		"User":          user,
+		"Difficulties":  game.Difficulties,
+		"SudokuTop":     sudokuTop,
+		"G2048Top":      g2048Top,
+		"TTTTop":        tttTop,
+		"C4Top":         c4Top,
+		"CheckersTop":   checkersTop,
+		"G2048WinsTop":  g2048WinsTop,
+	})
+}
+
 // ShowDifficulty renders the cumulative leaderboard for an entire difficulty.
 func (h *LeaderboardHandler) ShowDifficulty(w http.ResponseWriter, r *http.Request) {
 	user := mustUser(r)
