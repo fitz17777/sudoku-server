@@ -1,5 +1,5 @@
-# Compiled binary
-server
+# Compiled binary (root-level only — does NOT match cmd/server/ package)
+/server
 /app
 
 # Environment — never commit real credentials
