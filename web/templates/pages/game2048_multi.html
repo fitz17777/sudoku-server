@@ -88,34 +88,135 @@
 </div>
 
 <script>
-function g2048mMove(dir){
-  var f=document.getElementById('g2048m-form-'+dir); if(f)f.requestSubmit();
-}
-document.addEventListener('keydown',function(e){
-  var m={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};
-  if(m[e.key]){e.preventDefault();g2048mMove(m[e.key]);}
-});
-document.body.addEventListener('htmx:wsAfterMessage',e=>{
-  try{
-    const msg=JSON.parse(e.detail.message);
-    if(msg.html){
-      const tmp=document.createElement('div'); tmp.innerHTML=msg.html;
-      tmp.querySelectorAll('[hx-swap-oob="true"]').forEach(el=>{
-        const t=document.getElementById(el.id); if(t)t.outerHTML=el.outerHTML;
-      });
+(function(){
+'use strict';
+let busy = false;
+
+function readGrid(boardEl) {
+  const g = [];
+  for (let r = 0; r < 4; r++) {
+    g.push([]);
+    for (let c = 0; c < 4; c++) {
+      const t = boardEl.children[r * 4 + c];
+      g[r].push(parseInt(t && t.textContent.trim()) || 0);
     }
-    if(msg.type==='game_complete'){
-      const lr=document.getElementById('leaderboard-result');
-      if(lr&&lr.innerHTML.trim()){
-        const m=document.getElementById('result-modal');
-        m.querySelector('#result-modal-inner').innerHTML=lr.innerHTML;
-        m.style.display='flex';
+  }
+  return g;
+}
+
+function computeDeltas(grid, dir) {
+  const deltas = Array.from({length:4}, () => Array.from({length:4}, () => ({dr:0,dc:0})));
+  function processLine(coords) {
+    const tiles = coords.map(([r,c]) => ({r,c,v:grid[r][c]})).filter(t => t.v);
+    const placed = [];
+    for (const cur of tiles) {
+      const last = placed[placed.length-1];
+      if (last && !last.merged && last.val === cur.v) {
+        const [tr,tc] = coords[placed.length-1];
+        deltas[cur.r][cur.c] = {dr: tr-cur.r, dc: tc-cur.c};
+        last.merged = true;
+      } else {
+        const [tr,tc] = coords[placed.length];
+        deltas[cur.r][cur.c] = {dr: tr-cur.r, dc: tc-cur.c};
+        placed.push({val: cur.v, merged: false});
       }
     }
-  }catch(e){}
+  }
+  if (dir === 'left' || dir === 'right') {
+    for (let r = 0; r < 4; r++) {
+      const cols = dir === 'left' ? [0,1,2,3] : [3,2,1,0];
+      processLine(cols.map(c => [r,c]));
+    }
+  } else {
+    for (let c = 0; c < 4; c++) {
+      const rows = dir === 'up' ? [0,1,2,3] : [3,2,1,0];
+      processLine(rows.map(r => [r,c]));
+    }
+  }
+  return deltas;
+}
+
+function animateBoard(boardEl, dir) {
+  if (!boardEl || boardEl.children.length < 16) return;
+  const grid   = readGrid(boardEl);
+  const deltas = computeDeltas(grid, dir);
+  const a0 = boardEl.children[0].getBoundingClientRect();
+  const a1 = boardEl.children[1].getBoundingClientRect();
+  const a4 = boardEl.children[4] && boardEl.children[4].getBoundingClientRect();
+  const colPx = a1.left - a0.left;
+  const rowPx = a4 ? a4.top - a0.top : colPx;
+  Array.from(boardEl.children).forEach((tile, i) => {
+    const r = Math.floor(i/4), c = i%4;
+    const {dr, dc} = deltas[r][c];
+    if (dr || dc) {
+      tile.style.transition = 'transform 100ms ease';
+      tile.style.transform  = `translate(${dc*colPx}px,${dr*rowPx}px)`;
+    }
+  });
+}
+
+// Snapshot old grids before any OOB swap, then pop-in new tiles after.
+function applyOOBWithPop(html) {
+  const oldGrids = {};
+  document.querySelectorAll('[id^="g2048m-board"]').forEach(b => {
+    oldGrids[b.id] = readGrid(b);
+  });
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  tmp.querySelectorAll('[hx-swap-oob="true"]').forEach(el => {
+    const t = document.getElementById(el.id); if (t) t.outerHTML = el.outerHTML;
+  });
+  document.querySelectorAll('[id^="g2048m-board"]').forEach(b => {
+    const old = oldGrids[b.id]; if (!old) return;
+    Array.from(b.children).forEach((tile, i) => {
+      const r = Math.floor(i/4), c = i%4;
+      if ((parseInt(tile.textContent.trim())||0) !== 0 && old[r][c] === 0)
+        tile.style.animation = 'tile-pop 180ms ease';
+    });
+  });
+}
+
+// Find the board to animate: collab=board0, else try board with my index
+function getMyBoard() {
+  return document.getElementById('g2048m-board0') ||
+         document.querySelector('[id^="g2048m-board"]');
+}
+
+window.g2048mMove = function(dir) {
+  if (busy) return;
+  busy = true;
+  const board = getMyBoard();
+  if (board) animateBoard(board, dir);
+  setTimeout(function() {
+    const f = document.getElementById('g2048m-form-'+dir);
+    if (f) f.requestSubmit();
+    setTimeout(function(){ busy = false; }, 200);
+  }, 110);
+};
+
+document.addEventListener('keydown', function(e) {
+  const m = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};
+  if (m[e.key]) { e.preventDefault(); g2048mMove(m[e.key]); }
 });
-document.getElementById('result-modal').addEventListener('click',e=>{
-  if(e.target===e.currentTarget)e.currentTarget.style.display='none';
+
+document.body.addEventListener('htmx:wsAfterMessage', e => {
+  try {
+    const msg = JSON.parse(e.detail.message);
+    if (msg.html) applyOOBWithPop(msg.html);
+    if (msg.type === 'game_complete') {
+      const lr = document.getElementById('leaderboard-result');
+      if (lr && lr.innerHTML.trim()) {
+        const m = document.getElementById('result-modal');
+        m.querySelector('#result-modal-inner').innerHTML = lr.innerHTML;
+        m.style.display = 'flex';
+      }
+    }
+  } catch(e) {}
 });
+
+document.getElementById('result-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.style.display = 'none';
+});
+})();
 </script>
 {{end}}
