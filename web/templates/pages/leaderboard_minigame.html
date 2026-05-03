@@ -1,0 +1,42 @@
+{{define "title"}}{{gameTypeLabel .GameType}} Leaderboard — Games{{end}}
+{{define "content"}}
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem; flex-wrap:wrap;">
+  <h1 style="margin:0;">{{gameTypeLabel .GameType}} Leaderboard</h1>
+</div>
+
+<div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.5rem;">
+  <a href="/leaderboard/game/tictactoe"
+     class="btn {{if eq .GameType "tictactoe"}}btn-primary{{else}}btn-secondary{{end}}">Tic Tac Toe</a>
+  <a href="/leaderboard/game/connectfour"
+     class="btn {{if eq .GameType "connectfour"}}btn-primary{{else}}btn-secondary{{end}}">Connect Four</a>
+  <a href="/leaderboard/game/checkers"
+     class="btn {{if eq .GameType "checkers"}}btn-primary{{else}}btn-secondary{{end}}">Checkers</a>
+</div>
+
+<div class="card">
+  <h2 style="margin-bottom:0.75rem;">Top Players — {{gameTypeLabel .GameType}}</h2>
+  {{if .Entries}}
+  <table style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="color:#64748b; font-size:0.85rem; text-align:left; border-bottom:1px solid #334155;">
+        <th style="padding:0.5rem 0.75rem;">#</th>
+        <th style="padding:0.5rem 0.75rem;">Player</th>
+        <th style="padding:0.5rem 0.75rem; text-align:right;">Wins</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Entries}}
+      <tr style="border-bottom:1px solid #1e293b;">
+        <td style="padding:0.6rem 0.75rem; color:#64748b; font-weight:700;">{{.Rank}}</td>
+        <td style="padding:0.6rem 0.75rem;">{{.DisplayName}}</td>
+        <td style="padding:0.6rem 0.75rem; text-align:right; font-weight:700; color:#60a5fa;">{{.Wins}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p style="color:#64748b; text-align:center; padding:2rem;">No games played yet. Be the first to win!</p>
+  {{end}}
+</div>
+{{end}}
+{{template "layout/base.html" .}}

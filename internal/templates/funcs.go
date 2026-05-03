@@ -88,5 +88,97 @@ func FuncMap() template.FuncMap {
 		"isModeSideBySide": func(m interface{}) bool {
 			return fmt.Sprintf("%v", m) == string(game.ModeSideBySide)
 		},
+
+		// --- Mini-game helpers ---
+
+		// tttSymbol converts a board value (0/1/2) to "", "X", or "O".
+		"tttSymbol": func(v int) string {
+			switch v {
+			case 1:
+				return "X"
+			case 2:
+				return "O"
+			}
+			return ""
+		},
+
+		// isTTTWinCell returns true if (r,c) is in the winning line.
+		"isTTTWinCell": func(winLine [][2]int, r, c int) bool {
+			for _, cell := range winLine {
+				if cell[0] == r && cell[1] == c {
+					return true
+				}
+			}
+			return false
+		},
+
+		// isWinCell returns true if (r,c) is in a connect-four winning cells list.
+		"isWinCell": func(winCells [][2]int, r, c int) bool {
+			for _, cell := range winCells {
+				if cell[0] == r && cell[1] == c {
+					return true
+				}
+			}
+			return false
+		},
+
+		// c4PlayerClass maps 0/1/2 to "empty"/"p1"/"p2".
+		"c4PlayerClass": func(v int) string {
+			switch v {
+			case 1:
+				return "p1"
+			case 2:
+				return "p2"
+			}
+			return "empty"
+		},
+
+		// isDarkSquare returns true for dark (playable) checkers squares.
+		"isDarkSquare": func(r, c int) bool {
+			return (r+c)%2 == 1
+		},
+
+		// checkersPieceClass maps board value to a CSS class.
+		"checkersPieceClass": func(v int) string {
+			switch v {
+			case 1:
+				return "p1-piece"
+			case 2:
+				return "p2-piece"
+			case 3:
+				return "p1-king"
+			case 4:
+				return "p2-king"
+			}
+			return ""
+		},
+
+		// isSelected returns true if (r,c) is the currently selected checkers piece.
+		"isSelected": func(selected *[2]int, r, c int) bool {
+			return selected != nil && selected[0] == r && selected[1] == c
+		},
+
+		// isValidDest returns true if (r,c) is a valid move destination.
+		"isValidDest": func(validMoves []game.CheckersMove, r, c int) bool {
+			for _, m := range validMoves {
+				if m.ToRow == r && m.ToCol == c {
+					return true
+				}
+			}
+			return false
+		},
+
+		// gameTypeLabel maps a game type string to a display name.
+		"gameTypeLabel": func(gt string) string {
+			switch gt {
+			case game.GameTypeTicTacToe:
+				return "Tic Tac Toe"
+			case game.GameTypeConnectFour:
+				return "Connect Four"
+			case game.GameTypeCheckers:
+				return "Checkers"
+			}
+			return "Sudoku"
+		},
 	}
 }

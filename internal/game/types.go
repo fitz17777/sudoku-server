@@ -77,6 +77,14 @@ type Puzzle struct {
 	ClueCount  int        `json:"clue_count"`
 }
 
+// GameType identifies which game is played in a room.
+const (
+	GameTypeSudoku      = "sudoku"
+	GameTypeTicTacToe   = "tictactoe"
+	GameTypeConnectFour = "connectfour"
+	GameTypeCheckers    = "checkers"
+)
+
 // GameMode for multiplayer.
 type GameMode string
 
@@ -138,6 +146,7 @@ type Room struct {
 	Difficulty Difficulty `json:"difficulty"`
 	Number     int        `json:"number"`
 	HostUserID string     `json:"host_user_id"`
+	GameType   string     `json:"game_type"` // empty = "sudoku" for backward compat
 }
 
 // User is the authenticated user injected into request context.
@@ -195,3 +204,64 @@ type DifficultyLeaderboardEntry struct {
 
 // PlayerColors for multiplayer color assignment.
 var PlayerColors = []string{"blue", "red"}
+
+// --- Turn-based mini-games ---
+
+// TicTacToeState is the in-Redis state for a tic-tac-toe game.
+type TicTacToeState struct {
+	GameID    string     `json:"game_id"`
+	RoomCode  string     `json:"room_code"`
+	Board     [3][3]int  `json:"board"`    // 0=empty 1=P1(X) 2=P2(O)
+	Players   []Player   `json:"players"`
+	Turn      string     `json:"turn"`     // userID of current player
+	Status    GameStatus `json:"status"`
+	WinnerID  string     `json:"winner_id"`
+	WinLine   [][2]int   `json:"win_line"` // three winning cells, nil if none
+	StartedAt time.Time  `json:"started_at"`
+}
+
+// ConnectFourState is the in-Redis state for a Connect Four game.
+// Board rows 0–5 rendered top-to-bottom; pieces fall to highest row index.
+type ConnectFourState struct {
+	GameID    string     `json:"game_id"`
+	RoomCode  string     `json:"room_code"`
+	Board     [6][7]int  `json:"board"`     // 0=empty 1=P1 2=P2
+	Players   []Player   `json:"players"`
+	Turn      string     `json:"turn"`
+	Status    GameStatus `json:"status"`
+	WinnerID  string     `json:"winner_id"`
+	WinCells  [][2]int   `json:"win_cells"` // four winning cells, nil if none
+	StartedAt time.Time  `json:"started_at"`
+}
+
+// CheckersMove describes one legal move or jump for a checkers piece.
+type CheckersMove struct {
+	ToRow  int  `json:"to_row"`
+	ToCol  int  `json:"to_col"`
+	IsJump bool `json:"is_jump"`
+	CapRow int  `json:"cap_row"` // captured piece row (jump only)
+	CapCol int  `json:"cap_col"` // captured piece col (jump only)
+}
+
+// CheckersState is the in-Redis state for a Checkers game.
+// Board: 0=empty 1=P1 2=P2 3=P1king 4=P2king
+// P1 starts rows 5-7 (moves toward row 0); P2 starts rows 0-2 (moves toward row 7).
+type CheckersState struct {
+	GameID       string        `json:"game_id"`
+	RoomCode     string        `json:"room_code"`
+	Board        [8][8]int     `json:"board"`
+	Players      []Player      `json:"players"`
+	Turn         string        `json:"turn"`
+	Status       GameStatus    `json:"status"`
+	WinnerID     string        `json:"winner_id"`
+	Selected     *[2]int       `json:"selected"`       // currently selected piece, nil if none
+	MustJumpFrom *[2]int       `json:"must_jump_from"` // mid-multi-jump, nil otherwise
+	StartedAt    time.Time     `json:"started_at"`
+}
+
+// WinLeaderboardEntry is one row in a wins-based leaderboard (mini-games).
+type WinLeaderboardEntry struct {
+	Rank        int
+	DisplayName string
+	Wins        int
+}

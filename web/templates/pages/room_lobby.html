@@ -1,4 +1,4 @@
-{{define "title"}}Room {{.Room.Code}} — Sudoku{{end}}
+{{define "title"}}Room {{.Room.Code}} — Lobby{{end}}
 {{define "style"}}
 .lobby-code {
   font-size:3rem; font-weight:800; letter-spacing:0.25em;
@@ -12,9 +12,6 @@
   <div class="card" style="flex:1; min-width:280px;">
     <p style="color:#94a3b8; margin-bottom:0.5rem;">Share this code:</p>
     <div class="lobby-code">{{.Room.Code}}</div>
-    <p style="color:#94a3b8; font-size:0.85rem; margin-top:0.5rem;">
-      Mode: <strong style="color:#e2e8f0;">{{.Room.Mode}}</strong>
-    </p>
     <div style="margin-top:1rem;">
       <p style="color:#94a3b8; font-size:0.8rem; margin-bottom:0.5rem;">Or scan to join:</p>
       <img id="room-qr" alt="QR code" style="display:block; background:#fff; border-radius:0.375rem; width:160px; height:160px;">
@@ -37,20 +34,31 @@
       <input type="hidden" name="type" value="start_game">
       <input type="hidden" name="room_id" value="{{.Room.Code}}">
       <div class="form-group">
-        <label>Game Mode</label>
-        <select name="mode">
-          <option value="collaborative"{{if eq .Room.Mode "collaborative"}} selected{{end}}>Collaborative — share one board, work together</option>
-          <option value="competitive"{{if eq .Room.Mode "competitive"}} selected{{end}}>Competitive — share one board, race for cells</option>
-          <option value="sidebyside"{{if eq .Room.Mode "sidebyside"}} selected{{end}}>Side by Side — separate boards, same puzzle</option>
+        <label>Game</label>
+        <select name="game_type" id="sel-game" onchange="onGameChange()">
+          <option value="sudoku">Sudoku</option>
+          <option value="tictactoe">Tic Tac Toe</option>
+          <option value="connectfour">Connect Four</option>
+          <option value="checkers">Checkers</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Difficulty</label>
-        <select name="difficulty">
-          {{range .Difficulties}}
-          <option value="{{.}}">{{difficultyLabel .}} ({{basePoints .}} pts)</option>
-          {{end}}
-        </select>
+      <div id="sudoku-settings">
+        <div class="form-group">
+          <label>Game Mode</label>
+          <select name="mode">
+            <option value="collaborative">Collaborative — share one board, work together</option>
+            <option value="competitive">Competitive — share one board, race for cells</option>
+            <option value="sidebyside">Side by Side — separate boards, same puzzle</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Difficulty</label>
+          <select name="difficulty">
+            {{range .Difficulties}}
+            <option value="{{.}}">{{difficultyLabel .}} ({{basePoints .}} pts)</option>
+            {{end}}
+          </select>
+        </div>
       </div>
       <button type="submit" class="btn btn-success" style="width:100%;">
         Start Game
@@ -72,6 +80,11 @@
 {{define "scripts"}}
 <script src="/static/js/qrcode.min.js"></script>
 <script>
+function onGameChange(){
+  const v = document.getElementById('sel-game').value;
+  const s = document.getElementById('sudoku-settings');
+  if(s) s.style.display = (v === 'sudoku') ? '' : 'none';
+}
 QRCode.toDataURL(
   window.location.origin + '/play/multi/room/{{.Room.Code}}',
   { width: 160, margin: 1, color: { dark: '#0f172a', light: '#ffffff' } }

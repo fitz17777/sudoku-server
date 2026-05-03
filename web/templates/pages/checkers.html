@@ -1,0 +1,71 @@
+{{define "checkers-content"}}
+<div style="display:flex; gap:2rem; flex-wrap:wrap; align-items:flex-start; justify-content:center;">
+  <div>
+    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+      <h2 style="margin:0;">Checkers</h2>
+      <span id="chk-status" style="font-size:0.95rem; color:#94a3b8;">{{.TurnName}}</span>
+    </div>
+
+    {{/* WS forms — one per square */}}
+    <div id="chk-ws" hx-ext="ws" ws-connect="/ws?room={{.Room.Code}}" style="display:none;">
+      {{range $r := seq 8}}{{range $c := seq 8}}
+      <form ws-send id="chk-form-{{$r}}-{{$c}}">
+        <input type="hidden" name="type" value="checkers_click">
+        <input type="hidden" name="room_id" value="{{$.Room.Code}}">
+        <input type="hidden" name="row" value="{{$r}}">
+        <input type="hidden" name="col" value="{{$c}}">
+      </form>
+      {{end}}{{end}}
+    </div>
+
+    <div id="chk-inner">
+      <div id="chk-board" class="chk-board">
+        {{range $r := seq 8}}{{range $c := seq 8}}
+        {{$cell := index (index $.State.Board $r) $c}}
+        <div id="chk-{{$r}}-{{$c}}"
+             class="chk-cell{{if isDarkSquare $r $c}} dark{{else}} light{{end}}{{if isSelected $.State.Selected $r $c}} selected{{end}}{{if isValidDest $.ValidMoves $r $c}} valid-dest{{end}}"
+             onclick="chkClick({{$r}},{{$c}})">
+          {{if $cell}}<div class="chk-piece {{checkersPieceClass $cell}}">{{if ge $cell 3}}♛{{end}}</div>{{end}}
+        </div>
+        {{end}}{{end}}
+      </div>
+    </div>
+  </div>
+
+  <div style="flex:1; min-width:220px;">
+    <div id="leaderboard-result"></div>
+  </div>
+</div>
+
+<div id="result-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:100; align-items:center; justify-content:center;">
+  <div id="result-modal-inner" class="card" style="max-width:400px; width:100%;"></div>
+</div>
+
+<script>
+function chkClick(r,c){
+  const f=document.getElementById('chk-form-'+r+'-'+c); if(f)f.requestSubmit();
+}
+document.body.addEventListener('htmx:wsAfterMessage', e=>{
+  try{
+    const msg=JSON.parse(e.detail.message);
+    if(msg.html){
+      const tmp=document.createElement('div'); tmp.innerHTML=msg.html;
+      tmp.querySelectorAll('[hx-swap-oob="true"]').forEach(el=>{
+        const t=document.getElementById(el.id); if(t)t.outerHTML=el.outerHTML;
+      });
+    }
+    if(msg.type==='game_complete'){
+      const lr=document.getElementById('leaderboard-result');
+      if(lr&&lr.innerHTML.trim()){
+        const m=document.getElementById('result-modal');
+        m.querySelector('#result-modal-inner').innerHTML=lr.innerHTML;
+        m.style.display='flex';
+      }
+    }
+  }catch(e){}
+});
+document.getElementById('result-modal').addEventListener('click',e=>{
+  if(e.target===e.currentTarget)e.currentTarget.style.display='none';
+});
+</script>
+{{end}}

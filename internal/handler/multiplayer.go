@@ -11,6 +11,7 @@ import (
 	"github.com/user/sudoku/internal/templates"
 )
 
+
 // MultiHandler handles multiplayer room routes.
 type MultiHandler struct {
 	store *redisstore.Client
@@ -22,37 +23,17 @@ func NewMultiHandler(store *redisstore.Client, tmpl *templates.Renderer, h *hub.
 	return &MultiHandler{store: store, tmpl: tmpl, hub: h}
 }
 
-// CreateRoomPage shows the create-room form.
-func (h *MultiHandler) CreateRoomPage(w http.ResponseWriter, r *http.Request) {
-	user := mustUser(r)
-	renderPage(w, h.tmpl, "pages/room_create.html", map[string]interface{}{
-		"User":         user,
-		"Difficulties": game.Difficulties,
-	})
-}
-
-// CreateRoom handles the POST to create a new room.
+// CreateRoom creates a new room with defaults and redirects straight to the lobby.
+// Both GET and POST map here so the nav "Create Lobby" button (POST form) and any
+// direct link (GET) both work identically.
 func (h *MultiHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 	user := mustUser(r)
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
-		return
-	}
-
-	mode := game.GameMode(r.FormValue("mode"))
-	switch mode {
-	case game.ModeCollaborative, game.ModeCompetitive, game.ModeSideBySide:
-	default:
-		mode = game.ModeCollaborative
-	}
-
 	code := hub.GenerateRoomCode()
-	_, err := h.hub.EnsureRoom(r.Context(), code, *user, mode)
+	_, err := h.hub.EnsureRoom(r.Context(), code, *user, game.ModeCollaborative)
 	if err != nil {
 		http.Error(w, "could not create room", http.StatusInternalServerError)
 		return
 	}
-
 	http.Redirect(w, r, "/play/multi/room/"+code, http.StatusFound)
 }
 

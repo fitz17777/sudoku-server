@@ -47,6 +47,26 @@ func (h *LeaderboardHandler) ShowDifficulty(w http.ResponseWriter, r *http.Reque
 	})
 }
 
+// ShowMiniGame renders the wins leaderboard for a mini-game (tictactoe/connectfour/checkers).
+func (h *LeaderboardHandler) ShowMiniGame(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(r)
+	gameType := chi.URLParam(r, "gametype")
+	switch gameType {
+	case game.GameTypeTicTacToe, game.GameTypeConnectFour, game.GameTypeCheckers:
+	default:
+		http.Error(w, "unknown game type", http.StatusBadRequest)
+		return
+	}
+
+	entries, _ := h.store.GetWinLeaderboard(r.Context(), gameType, 20)
+
+	renderPage(w, h.tmpl, "pages/leaderboard_minigame.html", map[string]interface{}{
+		"User":     user,
+		"GameType": gameType,
+		"Entries":  entries,
+	})
+}
+
 // Show renders the leaderboard for a specific puzzle.
 func (h *LeaderboardHandler) Show(w http.ResponseWriter, r *http.Request) {
 	user := mustUser(r)

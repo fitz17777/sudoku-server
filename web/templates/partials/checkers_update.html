@@ -1,0 +1,13 @@
+<div id="chk-inner" hx-swap-oob="true">
+  <div id="chk-board" class="chk-board">
+    {{range $r := seq 8}}{{range $c := seq 8}}
+    {{$cell := index (index $.Board $r) $c}}
+    <div id="chk-{{$r}}-{{$c}}"
+         class="chk-cell{{if isDarkSquare $r $c}} dark{{else}} light{{end}}{{if isSelected $.Selected $r $c}} selected{{end}}{{if isValidDest $.ValidMoves $r $c}} valid-dest{{end}}"
+         onclick="chkClick({{$r}},{{$c}})">
+      {{if $cell}}<div class="chk-piece {{checkersPieceClass $cell}}">{{if ge $cell 3}}♛{{end}}</div>{{end}}
+    </div>
+    {{end}}{{end}}
+  </div>
+</div>
+<span id="chk-status" hx-swap-oob="true" style="font-size:0.95rem; color:#94a3b8;">{{.TurnName}}</span>

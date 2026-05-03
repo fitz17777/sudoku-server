@@ -1,0 +1,10 @@
+<div id="ttt-board" class="ttt-board" hx-swap-oob="true">
+  {{range $r := seq 3}}{{range $c := seq 3}}
+  <div id="ttt-{{$r}}-{{$c}}"
+       class="ttt-cell{{if isTTTWinCell $.WinLine $r $c}} win-cell{{end}}"
+       onclick="tttClick({{$r}},{{$c}})">
+    {{tttSymbol (index (index $.Board $r) $c)}}
+  </div>
+  {{end}}{{end}}
+</div>
+<span id="ttt-status" hx-swap-oob="true" style="font-size:0.95rem; color:#94a3b8;">{{.TurnName}}</span>

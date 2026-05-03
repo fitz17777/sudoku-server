@@ -280,6 +280,42 @@ func (c *Client) GetDifficultyLeaderboard(ctx context.Context, difficulty game.D
 	return entries, nil
 }
 
+// --- mini-game wins leaderboard ---
+
+func winsKey(gameType string) string    { return "wins:" + gameType }
+func winsMetaKey(gameType string) string { return "wins_meta:" + gameType }
+
+// RecordWin increments the win counter for a player in a given game type.
+func (c *Client) RecordWin(ctx context.Context, gameType, userID, displayName string) error {
+	if err := c.rdb.ZIncrBy(ctx, winsKey(gameType), 1, userID).Err(); err != nil {
+		return err
+	}
+	c.rdb.HSet(ctx, winsMetaKey(gameType), userID, displayName)
+	return nil
+}
+
+// GetWinLeaderboard returns the top N players by win count for a game type.
+func (c *Client) GetWinLeaderboard(ctx context.Context, gameType string, topN int) ([]game.WinLeaderboardEntry, error) {
+	results, err := c.rdb.ZRevRangeWithScores(ctx, winsKey(gameType), 0, int64(topN-1)).Result()
+	if err != nil {
+		return nil, err
+	}
+	entries := make([]game.WinLeaderboardEntry, 0, len(results))
+	for i, z := range results {
+		key := fmt.Sprintf("%v", z.Member)
+		displayName := key
+		if name, err := c.rdb.HGet(ctx, winsMetaKey(gameType), key).Result(); err == nil {
+			displayName = name
+		}
+		entries = append(entries, game.WinLeaderboardEntry{
+			Rank:        i + 1,
+			DisplayName: displayName,
+			Wins:        int(z.Score),
+		})
+	}
+	return entries, nil
+}
+
 // --- helpers ---
 
 // FormatTime formats seconds into m:ss.

@@ -1,0 +1,22 @@
+<div id="leaderboard-result" hx-swap-oob="true">
+  <div style="padding:1rem 0;">
+    {{if .IsDraw}}
+    <p style="font-size:1.5rem; font-weight:700; color:#e2e8f0; text-align:center; margin-bottom:1rem;">Draw!</p>
+    {{else}}
+    <p style="font-size:1.5rem; font-weight:700; color:#60a5fa; text-align:center; margin-bottom:1rem;">🏆 {{.WinnerName}} wins!</p>
+    {{end}}
+
+    <div style="margin-bottom:1rem;">
+      {{range .Players}}
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:0.4rem 0; border-bottom:1px solid #334155;">
+        <span class="badge badge-{{.Color}}">{{.DisplayName}}</span>
+        <span style="color:#94a3b8; font-size:0.85rem;">{{.Wins}} win{{if ne .Wins 1}}s{{end}}</span>
+      </div>
+      {{end}}
+    </div>
+
+    <a href="/play/multi/room/{{.RoomCode}}" class="btn btn-primary" style="width:100%; text-align:center; display:block;">
+      Play Again
+    </a>
+  </div>
+</div>

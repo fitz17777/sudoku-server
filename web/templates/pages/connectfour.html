@@ -1,0 +1,71 @@
+{{define "connectfour-content"}}
+<div style="display:flex; gap:2rem; flex-wrap:wrap; align-items:flex-start; justify-content:center;">
+  <div>
+    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+      <h2 style="margin:0;">Connect Four</h2>
+      <span id="c4-status" style="font-size:0.95rem; color:#94a3b8;">{{.TurnName}}</span>
+    </div>
+
+    {{/* WS forms — one per column */}}
+    <div id="c4-ws" hx-ext="ws" ws-connect="/ws?room={{.Room.Code}}" style="display:none;">
+      {{range $c := seq 7}}
+      <form ws-send id="c4-form-{{$c}}">
+        <input type="hidden" name="type" value="c4_drop">
+        <input type="hidden" name="room_id" value="{{$.Room.Code}}">
+        <input type="hidden" name="col" value="{{$c}}">
+      </form>
+      {{end}}
+    </div>
+
+    <div class="c4-drop-row">
+      {{range $c := seq 7}}
+      <button class="c4-drop-btn" onclick="c4Drop({{$c}})">▼</button>
+      {{end}}
+    </div>
+
+    <div id="c4-board" class="c4-board">
+      {{range $r := seq 6}}{{range $c := seq 7}}
+      <div id="c4-{{$r}}-{{$c}}"
+           class="c4-cell {{c4PlayerClass (index (index $.State.Board $r) $c)}}{{if isWinCell $.State.WinCells $r $c}} win-cell{{end}}">
+      </div>
+      {{end}}{{end}}
+    </div>
+  </div>
+
+  <div style="flex:1; min-width:220px;">
+    <div id="leaderboard-result"></div>
+  </div>
+</div>
+
+<div id="result-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:100; align-items:center; justify-content:center;">
+  <div id="result-modal-inner" class="card" style="max-width:400px; width:100%;"></div>
+</div>
+
+<script>
+function c4Drop(col){
+  const f=document.getElementById('c4-form-'+col); if(f)f.requestSubmit();
+}
+document.body.addEventListener('htmx:wsAfterMessage', e=>{
+  try{
+    const msg=JSON.parse(e.detail.message);
+    if(msg.html){
+      const tmp=document.createElement('div'); tmp.innerHTML=msg.html;
+      tmp.querySelectorAll('[hx-swap-oob="true"]').forEach(el=>{
+        const t=document.getElementById(el.id); if(t)t.outerHTML=el.outerHTML;
+      });
+    }
+    if(msg.type==='game_complete'){
+      const lr=document.getElementById('leaderboard-result');
+      if(lr&&lr.innerHTML.trim()){
+        const m=document.getElementById('result-modal');
+        m.querySelector('#result-modal-inner').innerHTML=lr.innerHTML;
+        m.style.display='flex';
+      }
+    }
+  }catch(e){}
+});
+document.getElementById('result-modal').addEventListener('click',e=>{
+  if(e.target===e.currentTarget)e.currentTarget.style.display='none';
+});
+</script>
+{{end}}

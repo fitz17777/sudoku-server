@@ -166,6 +166,78 @@
       cursor: pointer; text-align: center;
     }
     .numpad-note-btn:hover { background: #1e293b; }
+
+    /* --- Tic Tac Toe --- */
+    .ttt-board {
+      display: grid; grid-template-columns: repeat(3, 100px);
+      border: 3px solid #64748b; border-radius: 4px;
+    }
+    .ttt-cell {
+      width: 100px; height: 100px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.5rem; font-weight: 700;
+      border: 1px solid #334155; cursor: pointer; user-select: none;
+      transition: background 0.1s;
+    }
+    .ttt-cell:hover { background: #1e293b; }
+    .ttt-cell:nth-child(3n+1) { border-left: none; }
+    .ttt-cell:nth-child(3n) { border-right: none; }
+    .ttt-cell:nth-child(-n+3) { border-top: none; }
+    .ttt-cell:nth-child(n+7) { border-bottom: none; }
+    .ttt-cell:nth-child(3), .ttt-cell:nth-child(6) { border-right: 3px solid #64748b; }
+    .ttt-cell:nth-child(3) ~ .ttt-cell:nth-child(-n+6) { border-top: none; }
+    .ttt-cell.win-cell { background: #14532d !important; }
+
+    /* --- Connect Four --- */
+    .c4-drop-row {
+      display: grid; grid-template-columns: repeat(7, 52px);
+      gap: 4px; margin-bottom: 4px;
+    }
+    .c4-drop-btn {
+      width: 52px; height: 28px; background: #1e293b;
+      border: 1px solid #334155; border-radius: 0.375rem;
+      color: #94a3b8; cursor: pointer; font-size: 0.85rem;
+    }
+    .c4-drop-btn:hover { background: #334155; color: #e2e8f0; }
+    .c4-board {
+      display: grid; grid-template-columns: repeat(7, 52px);
+      grid-template-rows: repeat(6, 52px);
+      gap: 4px; background: #1d4ed8;
+      border: 4px solid #1d4ed8; border-radius: 8px;
+    }
+    .c4-cell {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: #0f172a; transition: background 0.15s;
+    }
+    .c4-cell.p1 { background: #ef4444; }
+    .c4-cell.p2 { background: #facc15; }
+    .c4-cell.win-cell { box-shadow: 0 0 0 3px #fff inset; }
+
+    /* --- Checkers --- */
+    .chk-board {
+      display: grid; grid-template-columns: repeat(8, 56px);
+      grid-template-rows: repeat(8, 56px);
+      border: 3px solid #64748b; border-radius: 4px;
+    }
+    .chk-cell {
+      width: 56px; height: 56px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .chk-cell.light { background: #e2e8f0; }
+    .chk-cell.dark  { background: #475569; }
+    .chk-cell.dark:hover { background: #64748b; }
+    .chk-cell.selected { background: #1d4ed8 !important; }
+    .chk-cell.valid-dest { background: #166534 !important; }
+    .chk-piece {
+      width: 42px; height: 42px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; font-weight: 700; color: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    }
+    .chk-piece.p1-piece, .chk-piece.p1-king { background: #3b82f6; }
+    .chk-piece.p2-piece, .chk-piece.p2-king { background: #ef4444; }
+
     {{block "style" .}}{{end}}
   </style>
 </head>
@@ -175,7 +247,9 @@
   <div class="nav-links">
     {{if .User}}
       <a href="/play/solo">Solo</a>
-      <a href="/play/multi/create">Create Room</a>
+      <form action="/play/multi/create" method="POST" style="display:inline; margin:0;">
+        <button type="submit" style="background:none; border:none; color:#94a3b8; font-size:0.9rem; cursor:pointer; padding:0;">Create Lobby</button>
+      </form>
       <a href="/play/multi/join">Join Room</a>
       <a href="/leaderboard">Leaderboards</a>
       <span class="username">{{.User.DisplayName}}</span>

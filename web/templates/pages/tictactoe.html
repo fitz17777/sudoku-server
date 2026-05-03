@@ -1,0 +1,68 @@
+{{define "tictactoe-content"}}
+<div style="display:flex; gap:2rem; flex-wrap:wrap; align-items:flex-start; justify-content:center;">
+  <div>
+    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+      <h2 style="margin:0;">Tic Tac Toe</h2>
+      <span id="ttt-status" style="font-size:0.95rem; color:#94a3b8;">{{.TurnName}}</span>
+    </div>
+
+    {{/* Hidden WS forms inside ws-connect div */}}
+    <div id="ttt-ws" hx-ext="ws" ws-connect="/ws?room={{.Room.Code}}" style="display:none;">
+      {{range $r := seq 3}}{{range $c := seq 3}}
+      <form ws-send id="ttt-form-{{$r}}-{{$c}}">
+        <input type="hidden" name="type" value="ttt_move">
+        <input type="hidden" name="room_id" value="{{$.Room.Code}}">
+        <input type="hidden" name="row" value="{{$r}}">
+        <input type="hidden" name="col" value="{{$c}}">
+      </form>
+      {{end}}{{end}}
+    </div>
+
+    <div id="ttt-board" class="ttt-board">
+      {{range $r := seq 3}}{{range $c := seq 3}}
+      <div id="ttt-{{$r}}-{{$c}}"
+           class="ttt-cell{{if isTTTWinCell $.State.WinLine $r $c}} win-cell{{end}}"
+           onclick="tttClick({{$r}},{{$c}})">
+        {{tttSymbol (index (index $.State.Board $r) $c)}}
+      </div>
+      {{end}}{{end}}
+    </div>
+  </div>
+
+  <div style="flex:1; min-width:220px;">
+    <div id="leaderboard-result"></div>
+  </div>
+</div>
+
+<div id="result-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:100; align-items:center; justify-content:center;">
+  <div id="result-modal-inner" class="card" style="max-width:400px; width:100%;"></div>
+</div>
+
+<script>
+function tttClick(r,c){
+  const f=document.getElementById('ttt-form-'+r+'-'+c); if(f)f.requestSubmit();
+}
+document.body.addEventListener('htmx:wsAfterMessage', e=>{
+  try{
+    const msg=JSON.parse(e.detail.message);
+    if(msg.html){
+      const tmp=document.createElement('div'); tmp.innerHTML=msg.html;
+      tmp.querySelectorAll('[hx-swap-oob="true"]').forEach(el=>{
+        const t=document.getElementById(el.id); if(t)t.outerHTML=el.outerHTML;
+      });
+    }
+    if(msg.type==='game_complete'){
+      const lr=document.getElementById('leaderboard-result');
+      if(lr&&lr.innerHTML.trim()){
+        const m=document.getElementById('result-modal');
+        m.querySelector('#result-modal-inner').innerHTML=lr.innerHTML;
+        m.style.display='flex';
+      }
+    }
+  }catch(e){}
+});
+document.getElementById('result-modal').addEventListener('click',e=>{
+  if(e.target===e.currentTarget)e.currentTarget.style.display='none';
+});
+</script>
+{{end}}

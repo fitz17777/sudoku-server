@@ -119,8 +119,8 @@ func main() {
 		r.Get("/play/solo/{difficulty}/{number}", gameH.StartGame)
 		r.Post("/play/solo/{gameID}/cell", gameH.CellFill)
 
-		// Multiplayer
-		r.Get("/play/multi/create", multiH.CreateRoomPage)
+		// Multiplayer — GET and POST both create a room and redirect to lobby
+		r.Get("/play/multi/create", multiH.CreateRoom)
 		r.Post("/play/multi/create", multiH.CreateRoom)
 		r.Get("/play/multi/join", multiH.JoinRoomPage)
 		r.Post("/play/multi/join", multiH.JoinRoom)
@@ -132,6 +132,7 @@ func main() {
 		})
 		r.Get("/leaderboard/{difficulty}", lbH.ShowDifficulty)
 		r.Get("/leaderboard/{difficulty}/{number}", lbH.Show)
+		r.Get("/leaderboard/game/{gametype}", lbH.ShowMiniGame)
 
 		// WebSocket
 		r.Get("/ws", wsH.ServeHTTP)
