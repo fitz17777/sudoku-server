@@ -199,21 +199,29 @@ document.addEventListener('keydown', function(e) {
   if (m[e.key]) { e.preventDefault(); g2048mMove(m[e.key]); }
 });
 
-let touchX = 0, touchY = 0;
-document.addEventListener('touchstart', function(e) {
-  touchX = e.touches[0].clientX;
-  touchY = e.touches[0].clientY;
-}, {passive: true});
-document.addEventListener('touchend', function(e) {
-  const dx = e.changedTouches[0].clientX - touchX;
-  const dy = e.changedTouches[0].clientY - touchY;
-  if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
-  if (Math.abs(dx) > Math.abs(dy)) {
-    g2048mMove(dx > 0 ? 'right' : 'left');
-  } else {
-    g2048mMove(dy > 0 ? 'down' : 'up');
-  }
-}, {passive: true});
+(function() {
+  const board = document.getElementById('g2048m-board0') ||
+                document.querySelector('[id^="g2048m-board"]');
+  if (!board) return;
+  let touchX = 0, touchY = 0;
+  board.addEventListener('touchstart', function(e) {
+    touchX = e.touches[0].clientX;
+    touchY = e.touches[0].clientY;
+  }, {passive: true});
+  board.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+  }, {passive: false});
+  board.addEventListener('touchend', function(e) {
+    const dx = e.changedTouches[0].clientX - touchX;
+    const dy = e.changedTouches[0].clientY - touchY;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      g2048mMove(dx > 0 ? 'right' : 'left');
+    } else {
+      g2048mMove(dy > 0 ? 'down' : 'up');
+    }
+  }, {passive: true});
+}());
 
 document.body.addEventListener('htmx:wsAfterMessage', e => {
   try {
