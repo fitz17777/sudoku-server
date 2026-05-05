@@ -203,15 +203,21 @@ document.addEventListener('keydown', function(e) {
   const board = document.getElementById('g2048m-board0') ||
                 document.querySelector('[id^="g2048m-board"]');
   if (!board) return;
-  let touchX = 0, touchY = 0;
+  let touchX = 0, touchY = 0, active = false;
+
   board.addEventListener('touchstart', function(e) {
     touchX = e.touches[0].clientX;
     touchY = e.touches[0].clientY;
+    active = true;
   }, {passive: true});
-  board.addEventListener('touchmove', function(e) {
-    e.preventDefault();
+
+  document.addEventListener('touchmove', function(e) {
+    if (active) e.preventDefault();
   }, {passive: false});
-  board.addEventListener('touchend', function(e) {
+
+  document.addEventListener('touchend', function(e) {
+    if (!active) return;
+    active = false;
     const dx = e.changedTouches[0].clientX - touchX;
     const dy = e.changedTouches[0].clientY - touchY;
     if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
@@ -221,6 +227,8 @@ document.addEventListener('keydown', function(e) {
       g2048mMove(dy > 0 ? 'down' : 'up');
     }
   }, {passive: true});
+
+  document.addEventListener('touchcancel', function() { active = false; }, {passive: true});
 }());
 
 document.body.addEventListener('htmx:wsAfterMessage', e => {
