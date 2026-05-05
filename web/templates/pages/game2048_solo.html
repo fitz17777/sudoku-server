@@ -252,27 +252,19 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ---------- touch swipe ----------
-// touchmove must be on document with passive:false so preventDefault() fires
-// before the browser commits to pull-to-refresh or scroll.
-// The `active` flag ensures we only block when the swipe started on the board.
+// CSS touch-action:none on .board-2048 tells the browser not to handle these
+// touches natively. JS listeners on the board element handle the swipe.
 (function() {
   const board = document.getElementById('g2048-board');
   if (!board) return;
-  let touchX = 0, touchY = 0, active = false;
+  let touchX = 0, touchY = 0;
 
   board.addEventListener('touchstart', function(e) {
     touchX = e.touches[0].clientX;
     touchY = e.touches[0].clientY;
-    active = true;
   }, {passive: true});
 
-  document.addEventListener('touchmove', function(e) {
-    if (active) e.preventDefault();
-  }, {passive: false});
-
-  document.addEventListener('touchend', function(e) {
-    if (!active) return;
-    active = false;
+  board.addEventListener('touchend', function(e) {
     const dx = e.changedTouches[0].clientX - touchX;
     const dy = e.changedTouches[0].clientY - touchY;
     if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
@@ -282,8 +274,6 @@ document.addEventListener('keydown', function(e) {
       doMove(dy > 0 ? 'down' : 'up');
     }
   }, {passive: true});
-
-  document.addEventListener('touchcancel', function() { active = false; }, {passive: true});
 }());
 })();
 </script>
