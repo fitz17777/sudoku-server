@@ -1,4 +1,8 @@
 {{define "title"}}2048 — Thorium Games{{end}}
+{{define "style"}}
+/* Disable pull-to-refresh and overscroll bounce on the 2048 game page */
+html, body { overscroll-behavior: none; }
+{{end}}
 {{define "content"}}
 <div style="display:flex; flex-direction:column; align-items:center; gap:1.25rem;">
 
