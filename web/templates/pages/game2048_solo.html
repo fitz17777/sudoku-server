@@ -251,35 +251,31 @@ document.addEventListener('keydown', function(e) {
   if (m[e.key]) { e.preventDefault(); doMove(m[e.key]); }
 });
 
-// ---------- touch swipe ----------
-// touch-action:none on .board-2048 (CSS) stops browser gesture handling.
-// touchstart on the board sets the flag; touchend on document catches the
-// lift even when the finger slides off the board during the swipe.
+// ---------- touch swipe (mirrors gabrielecirulli/2048 input manager) ----------
 (function() {
   const board = document.getElementById('g2048-board');
   if (!board) return;
-  let touchX = 0, touchY = 0, active = false;
+  let touchX = 0, touchY = 0;
 
   board.addEventListener('touchstart', function(e) {
+    if (e.touches.length > 1) return;
     touchX = e.touches[0].clientX;
     touchY = e.touches[0].clientY;
-    active = true;
-  }, {passive: true});
+    e.preventDefault(); // must be non-passive — stops pull-to-refresh immediately
+  }, {passive: false});
 
-  document.addEventListener('touchend', function(e) {
-    if (!active) return;
-    active = false;
+  board.addEventListener('touchmove', function(e) {
+    e.preventDefault(); // stops page scroll while swiping
+  }, {passive: false});
+
+  board.addEventListener('touchend', function(e) {
+    if (e.touches.length > 0) return;
     const dx = e.changedTouches[0].clientX - touchX;
     const dy = e.changedTouches[0].clientY - touchY;
-    if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
-    if (Math.abs(dx) > Math.abs(dy)) {
-      doMove(dx > 0 ? 'right' : 'left');
-    } else {
-      doMove(dy > 0 ? 'down' : 'up');
+    if (Math.max(Math.abs(dx), Math.abs(dy)) > 10) {
+      doMove(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
     }
   }, {passive: true});
-
-  document.addEventListener('touchcancel', function() { active = false; }, {passive: true});
 }());
 })();
 </script>
